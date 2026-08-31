@@ -2,62 +2,76 @@
 
 console.log("[TG Downloader] Content script active on Telegram Web.");
 
-async function handleVideoDownload(videoSrc, btnElement) {
-  if (!videoSrc) {
-    alert("[TG Downloader] Please click play on the video first to load the stream, then click Download HD.");
-    return;
+async function downloadVideoDirectly(videoEl, btnElement) {
+  const originalHtml = btnElement.innerHTML;
+  btnElement.innerHTML = "<span>Extracting MP4...</span>";
+  btnElement.disabled = true;
+
+  let src = videoEl ? (videoEl.src || videoEl.currentSrc) : null;
+  if (!src && videoEl) {
+    const sourceTag = videoEl.querySelector("source");
+    if (sourceTag) src = sourceTag.src;
   }
 
-  const originalHtml = btnElement.innerHTML;
-  btnElement.innerHTML = "<span>Fetching...</span>";
-  btnElement.disabled = true;
+  if (!src) {
+    // Look for parent video element
+    const parent = btnElement.parentElement;
+    if (parent) {
+      const v = parent.querySelector("video");
+      if (v) src = v.src || v.currentSrc || (v.querySelector("source") ? v.querySelector("source").src : null);
+    }
+  }
+
+  if (!src || src.startsWith("data:")) {
+    alert("[TG Downloader] Please click play on the video first to load the stream, then click Download HD.");
+    btnElement.innerHTML = originalHtml;
+    btnElement.disabled = false;
+    return;
+  }
 
   const filename = `Telegram_Video_${Date.now()}.mp4`;
 
   try {
-    // Strategy A: Fetch blob/stream directly in page context
-    const res = await fetch(videoSrc);
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
+    // Fetch blob data directly inside tab context with session credentials
+    const response = await fetch(src, { credentials: 'include' });
+    if (!response.ok) throw new Error("HTTP error " + response.status);
 
-    const a = document.createElement("a");
-    a.style.display = "none";
-    a.href = blobUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
+    const rawBlob = await response.blob();
     
+    // Explicitly enforce video/mp4 MIME type to prevent .htm extension
+    const mp4Blob = new Blob([rawBlob], { type: "video/mp4" });
+    const objectUrl = URL.createObjectURL(mp4Blob);
+
+    // Create & click download link in tab DOM
+    const link = document.createElement("a");
+    link.style.display = "none";
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
     setTimeout(() => {
-      a.remove();
-      URL.revokeObjectURL(blobUrl);
-    }, 2000);
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    }, 3000);
 
-    btnElement.innerHTML = "<span>Saved!</span>";
+    btnElement.innerHTML = "<span>Saved MP4!</span>";
     setTimeout(() => {
       btnElement.innerHTML = originalHtml;
       btnElement.disabled = false;
     }, 2500);
 
   } catch (err) {
-    console.warn("[TG Downloader] Direct blob fetch failed, falling back to background downloader...", err);
+    console.warn("[TG Downloader] Direct tab fetch error, opening stream URL:", err);
+    btnElement.innerHTML = "<span>Opening Stream...</span>";
     
-    // Strategy B: Send to background service worker with forced filename
-    chrome.runtime.sendMessage(
-      { action: "download_video", videoUrl: videoSrc, filename: filename },
-      (response) => {
-        btnElement.disabled = false;
-        if (response && response.success) {
-          btnElement.innerHTML = "<span>Downloading...</span>";
-          setTimeout(() => { btnElement.innerHTML = originalHtml; }, 3000);
-        } else {
-          // Final Fallback: Open media URL directly in new tab
-          window.open(videoSrc, "_blank");
-          btnElement.innerHTML = originalHtml;
-        }
-      }
-    );
+    // Fallback: Open media URL directly in new window
+    window.open(src, "_blank");
+
+    setTimeout(() => {
+      btnElement.innerHTML = originalHtml;
+      btnElement.disabled = false;
+    }, 2000);
   }
 }
 
@@ -84,18 +98,7 @@ function injectDownloadButtons() {
     btn.onclick = (e) => {
       e.stopPropagation();
       e.preventDefault();
-
-      let src = videoEl ? videoEl.src : null;
-      if (!src && videoEl) {
-        const source = videoEl.querySelector("source");
-        if (source) src = source.src;
-      }
-      if (!src && parent) {
-        const v = parent.querySelector("video");
-        if (v) src = v.src || (v.querySelector("source") ? v.querySelector("source").src : null);
-      }
-
-      handleVideoDownload(src, btn);
+      downloadVideoDirectly(videoEl, btn);
     };
 
     if (getComputedStyle(parent).position === "static") {
