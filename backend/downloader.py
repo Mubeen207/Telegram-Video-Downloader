@@ -80,9 +80,11 @@ class DownloadTask:
         total_bytes: int = 0,
         duration: int = 0,
         resolution: str = "",
+        user_id: str = "default",
         custom_settings: Optional[Dict[str, Any]] = None
     ):
         self.id = task_id
+        self.user_id = user_id or "default"
         self.source_url = source_url
         self.direct_url = direct_url
         self.title = title
@@ -174,6 +176,7 @@ class DownloadManager:
         total_bytes: int = 0,
         duration: int = 0,
         resolution: str = "",
+        user_id: str = "default",
         custom_settings: Optional[Dict[str, Any]] = None
     ) -> DownloadTask:
         task_id = str(uuid.uuid4())[:8]
@@ -188,6 +191,7 @@ class DownloadManager:
             total_bytes=total_bytes,
             duration=duration,
             resolution=resolution,
+            user_id=user_id,
             custom_settings=custom_settings
         )
         self.tasks[task_id] = task
@@ -326,7 +330,7 @@ class DownloadManager:
                 "resolution": task.resolution or (task.quality if task.quality != "original" else "Original"),
                 "quality": task.quality,
                 "status": "completed"
-            })
+            }, user_id=task.user_id)
 
         except Exception as e:
             if not task._cancel_requested:

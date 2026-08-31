@@ -1,53 +1,109 @@
-# 🎬 Telegram Video Downloader
+# 🎬 TeleStream - Web Video Downloader
 
-A modern, fast, and lightweight web application to download public Telegram videos directly without needing a Telegram account, phone number, OTP, or session login.
-
----
-
-## ✨ Key Features
-
-- **Zero Credentials / No Login**: No Telegram phone number, 2FA, OTP, or QR login needed. Directly analyzes and downloads public Telegram video links.
-- **Dynamic Quality Selection**: Shows actual source resolutions (`Original`, `1080p`, `720p`, `480p`, `360p`) without claiming fake upscaled options.
-- **Size & Compression Presets**:
-  - `Best Quality` (Original stream / minimal loss)
-  - `Balanced` (~50% size reduction with H.264 optimization)
-  - `Smallest Size` (Maximum compression for tight bandwidth/storage)
-- **Advanced Options**: Custom CRF, target FPS, container format (MP4/MKV), and filename sanitization.
-- **Multi-Task Download Queue**: Real-time progress bar, percent, download speed, ETA, pause, resume, retry, and cancellation.
-- **Local Download History**: SQLite-backed history tracking with search, clear, and one-click open in Windows Explorer.
-- **Modern Responsive UI**: Dark & Light mode, glassmorphism aesthetics, responsive layouts, and instant toast notifications.
-- **Windows Optimized**: Path sanitization, collision renaming (`video (1).mp4`), and Explorer integration.
+**TeleStream** is a lightweight, high-performance, web-only application designed to analyze and download publicly available Telegram videos directly through your web browser without requiring a Telegram account, login, or any browser extensions.
 
 ---
 
-## 🚀 Quick Start
+## ✨ Features
 
-### 1. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+- **Web-Only & Zero Auth**: Operates completely in a standard browser (e.g. Google Chrome at `http://127.0.0.1:8000`). No extensions, logins, OTPs, or API keys needed.
+- **Dynamic Quality Selector**: Accurately displays source video resolutions (`Original`, `1080p`, `720p`, `480p`, `360p`) without artificial upscaling.
+- **FFmpeg Size & Compression Presets**:
+  - `Best Quality`: Near-lossless direct download with light container packaging.
+  - `Balanced`: H.264 compression saving ~50% disk space while preserving visual quality.
+  - `Smallest Size`: High-efficiency compression for low-bandwidth / storage constraints.
+- **Advanced Encoding Options**: Customizable CRF (Constant Rate Factor), FPS limiting, and MP4/MKV format selectors.
+- **Asynchronous Download Manager**: Multi-task download queue with live download speed, ETA countdown, chunk streaming, Pause, Resume, Retry, and Cancel.
+- **Local History & Settings**: Persistent SQLite storage for downloaded files with one-click opening in Windows Explorer.
+- **Safety & Performance**: Chunk-based streaming prevents loading entire videos into memory; automatic Windows filename sanitization and collision prevention (`video (1).mp4`).
+- **Modern UI**: Dark/Light mode, glassmorphic card design, and responsive layouts.
 
-### 2. Start Application
-```bash
+---
+
+## 📋 Requirements
+
+- **Operating System**: Windows 10/11, Linux, or macOS (Windows optimized).
+- **Python**: Python 3.10+ (Python 3.12 recommended).
+- **Web Browser**: Google Chrome, Microsoft Edge, Firefox, Brave, etc.
+- **FFmpeg (Optional)**: Required only if you wish to use compression presets or resolution downscaling. Direct original video downloads work out of the box without FFmpeg.
+
+---
+
+## 📦 Installation
+
+1. **Clone or Open the Repository**:
+   ```bash
+   cd Telegram-Video-Downloader
+   ```
+
+2. **Install Python Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+---
+
+## 🎥 FFmpeg Setup (Optional)
+
+If you want to use the **Balanced** or **Smallest Size** compression presets:
+
+- **Windows (winget)**:
+  ```powershell
+  winget install Gyan.FFmpeg
+  ```
+- **Manual**: Download `ffmpeg.exe` from [ffmpeg.org](https://ffmpeg.org/download.html) and either add it to your system `PATH` or place `ffmpeg.exe` inside a `bin/` folder in the project root.
+
+TeleStream automatically detects FFmpeg on startup and indicates its availability in the top-right header and Settings tab.
+
+---
+
+## 🚀 Running the Application
+
+Start the web server with a single command:
+
+```powershell
 python app.py
 ```
-*(Or double-click `run.bat` on Windows)*
 
-The application will start on **`http://127.0.0.1:8000`** and automatically open in your default browser (e.g. Google Chrome).
+*(On Windows, you can also double-click `run.bat`)*
+
+### Browser Usage
+
+Once started, TeleStream will automatically launch in your default web browser at:
+```text
+http://127.0.0.1:8000
+```
+
+### Workflow
+
+1. Paste a public Telegram video URL (e.g. `https://t.me/channel_name/123`).
+2. Click **Analyze Video**.
+3. View video dimensions, duration, format, and estimated size.
+4. Select your preferred resolution quality and compression preset.
+5. Click **Download Video**. Progress and speed will be tracked in the **Downloads** queue.
 
 ---
 
-## ⚡ Supported URL Formats
+## ⚡ Supported Telegram URL Formats
+
+TeleStream supports publicly accessible Telegram post links, including:
 
 - `https://t.me/channel_name/123`
 - `https://t.me/channel_name/123?single`
 - `https://telegram.me/channel_name/123`
 - `https://t.me/s/channel_name/123`
+- Supergroup topic threads: `https://t.me/channel_name/topic_id/123`
 
 ---
 
-## 🛠️ Technology Stack
+## ⚠️ Known Limitations
 
-- **Backend**: Python 3.12, FastAPI, Uvicorn, yt-dlp, HTTPX, AsyncIO, SQLite
-- **Video Processing**: FFmpeg integration (optional for compression/transcoding; direct stream for original)
-- **Frontend**: Modern Vanilla JS, HTML5, CSS3 with dynamic theme switching and glassmorphism styling
+- **Public Channels Only**: The media must be hosted in a public Telegram channel or group accessible via Telegram web preview.
+- **Protected Content**: Content protected by channel owners with "Restrict Saving Content" or messages requiring membership authentication cannot be retrieved. TeleStream reports these restrictions cleanly.
+- **Private Invite Links**: Links containing `t.me/c/...` or `t.me/+joinchat` are private and require user credentials, which TeleStream intentionally does not request or store.
+
+---
+
+## ⚖️ Legal & Responsible Use
+
+TeleStream is designed for downloading public domain, freely shared, or user-owned media from public Telegram channels. Users are responsible for complying with Telegram's Terms of Service and applicable copyright laws in their jurisdiction. Do not use this tool to infringe upon intellectual property rights.
