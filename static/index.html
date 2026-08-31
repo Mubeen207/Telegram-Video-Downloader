@@ -3,99 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TeleStream - Telegram Video Downloader</title>
+    <title>Telegram Private Video Downloader: Download Any Media | TeleStream</title>
+    <meta name="description" content="Download Telegram videos, public media, and restricted saving posts in 1080p HD. 100% Free, Fast & Secure online downloader with Chrome Extension support. Zero login required.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <!-- AUTH SCREEN (Shown when Logged Out) -->
-    <div class="auth-wrapper" id="authScreen" style="display: flex;">
-        <div class="auth-card">
-            <div class="auth-brand">
-                <div class="brand-icon lg">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <h2>TeleStream</h2>
-                <p class="auth-subtitle">Telegram Video Downloader</p>
-            </div>
 
-            <div class="auth-body">
-                <div class="auth-desc">Sign in with your Google account to access high-speed video analysis, custom quality selector, and download management.</div>
-                
-                <button type="button" class="btn-google" id="btnGoogleSignIn" onclick="handleGoogleSignIn()">
-                    <svg class="google-icon" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                    </svg>
-                    <span class="btn-text">Continue with Google</span>
-                    <span class="btn-spinner" id="authSpinner" style="display: none;"></span>
-                </button>
-
-                <div class="auth-error-banner" id="authErrorBanner" style="display: none;"></div>
-
-                <div class="auth-features-list">
-                    <div class="feat-item">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                        <span>Free & Unlimited</span>
-                    </div>
-                    <div class="feat-item">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                        <span>Simple</span>
-                    </div>
-                    <div class="feat-item">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                        <span>Fast & Direct</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN APPLICATION DASHBOARD (Shown when Logged In) -->
-    <div class="app-container" id="appDashboard" style="display: none;">
-        <!-- Top Navigation -->
+    <!-- MAIN APPLICATION DASHBOARD & LANDING PAGE -->
+    <div class="app-container" id="appDashboard">
+        <!-- Top Navigation Bar -->
         <header class="navbar">
-            <div class="brand">
+            <div class="brand" onclick="switchTab('downloader')">
                 <div class="brand-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <div class="brand-text">
-                    <h1>TeleStream</h1>
-                    <span class="badge badge-subtle">Downloader</span>
+                    <h1>TG Downloader</h1>
+                    <span class="badge badge-subtle">Private Media</span>
                 </div>
             </div>
 
             <nav class="nav-tabs">
                 <button class="nav-tab active" id="tabBtnDownloader" onclick="switchTab('downloader')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                     </svg>
                     <span>Downloader</span>
                 </button>
                 <button class="nav-tab" id="tabBtnQueue" onclick="switchTab('queue')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <span>Downloads</span>
                     <span class="counter-badge" id="activeTasksBadge" style="display: none;">0</span>
                 </button>
                 <button class="nav-tab" id="tabBtnHistory" onclick="switchTab('history')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/>
                     </svg>
                     <span>History</span>
                 </button>
                 <button class="nav-tab" id="tabBtnSettings" onclick="switchTab('settings')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"/>
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                     </svg>
@@ -105,7 +60,7 @@
 
             <div class="nav-actions">
                 <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
-                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="5"/>
                         <line x1="12" y1="1" x2="12" y2="3"/>
                         <line x1="12" y1="21" x2="12" y2="23"/>
@@ -116,20 +71,31 @@
                         <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
                         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
                     </svg>
-                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                     </svg>
                 </button>
+
+                <!-- Auth / User Profile Button -->
+                <button type="button" class="btn-google-nav" id="navBtnGoogleSignIn" onclick="handleGoogleSignIn()" style="display: flex;">
+                    <svg class="google-icon" width="16" height="16" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>Sign In</span>
+                </button>
                 
-                <!-- User Profile & Sign Out -->
-                <div class="user-profile-badge" id="userProfileBadge">
+                <!-- Logged In User Profile Chip -->
+                <div class="user-profile-badge" id="userProfileBadge" style="display: none;">
                     <img class="user-avatar" id="userAvatarImg" src="" alt="User">
                     <div class="user-info-text">
                         <span class="user-name" id="userDisplayName">User</span>
                         <span class="user-email" id="userEmailText">user@gmail.com</span>
                     </div>
                     <button class="btn-signout" onclick="handleSignOut()" title="Sign Out">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                             <polyline points="16 17 21 12 16 7"/>
                             <line x1="21" y1="12" x2="9" y2="12"/>
@@ -141,17 +107,24 @@
 
         <!-- Main Content Area -->
         <main class="main-content">
-            <!-- TAB 1: DOWNLOADER -->
+            <!-- TAB 1: DOWNLOADER (HERO & LANDING PAGE) -->
             <section class="tab-pane active" id="paneDownloader">
-                <div class="hero-card">
-                    <div class="hero-header">
-                        <h2>Download Public Telegram Videos</h2>
-                        <p>Paste a public channel message link to analyze, customize quality, and download in full speed.</p>
+                <!-- HERO SECTION -->
+                <div class="hero-card" id="heroSection">
+                    <div class="hero-pill-badge">
+                        <span class="sparkle">✦</span>
+                        <span>100% Free & Secure Telegram Downloader</span>
                     </div>
 
+                    <div class="hero-header">
+                        <h1 class="hero-title">Telegram Private Video Downloader: Download Any Media</h1>
+                        <p class="hero-subtitle">High-speed media extraction for Telegram public links, private channels, and restricted-saving videos with zero login codes required.</p>
+                    </div>
+
+                    <!-- Main Input Form for Telegram URLs -->
                     <form class="url-input-form" onsubmit="event.preventDefault(); handleAnalyze();">
                         <div class="input-wrapper">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
                                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                             </svg>
@@ -163,7 +136,7 @@
                                 spellcheck="false"
                             >
                             <button type="button" class="btn-paste" onclick="pasteFromClipboard()" title="Paste from clipboard">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
                                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
                                 </svg>
@@ -171,19 +144,19 @@
                             </button>
                         </div>
                         <button type="submit" class="btn-primary btn-analyze" id="btnAnalyze">
-                            <span class="btn-text">Analyze Video</span>
-                            <span class="btn-spinner" style="display: none;"></span>
-                            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <span class="btn-text">Analyze & Download</span>
+                            <span class="btn-spinner" id="btnAnalyzeSpinner" style="display: none;"></span>
+                            <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="5" y1="12" x2="19" y2="12"/>
                                 <polyline points="12 5 19 12 12 19"/>
                             </svg>
                         </button>
                     </form>
 
-                    <!-- Alert message container -->
+                    <!-- Alert Container -->
                     <div class="alert-container" id="alertContainer" style="display: none;">
                         <div class="alert-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"/>
                                 <line x1="12" y1="8" x2="12" y2="12"/>
                                 <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -195,10 +168,36 @@
 
                     <!-- Supported Format hint -->
                     <div class="url-hints">
-                        <span>Supported:</span>
+                        <span>Supported Formats:</span>
                         <code>https://t.me/channel/123</code>
-                        <code>https://t.me/channel/123?single</code>
+                        <code>https://t.me/c/1234567/890</code>
                         <code>https://telegram.me/channel/123</code>
+                    </div>
+
+                    <!-- PROMINENT CTA BUTTONS FOR EXTENSION & RESTRICTED MEDIA -->
+                    <div class="hero-cta-group">
+                        <button class="btn-cta-chrome" onclick="openModal('extensionModal')">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="4"/>
+                                <line x1="21.17" y1="8" x2="12" y2="8"/>
+                                <line x1="3.95" y1="6.06" x2="8.54" y2="14"/>
+                                <line x1="10.88" y1="21.94" x2="15.46" y2="14"/>
+                            </svg>
+                            <div class="cta-btn-text">
+                                <span class="cta-title">Install Chrome Extension</span>
+                                <span class="cta-subtitle">Bypass "Restrict Saving Content"</span>
+                            </div>
+                        </button>
+                        <button class="btn-cta-secondary" onclick="openModal('extensionModal')">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            <div class="cta-btn-text">
+                                <span class="cta-title">Restricted Content Guide</span>
+                                <span class="cta-subtitle">How to save private videos</span>
+                            </div>
+                        </button>
                     </div>
                 </div>
 
@@ -210,7 +209,7 @@
                             <span>Video Ready for Download</span>
                         </div>
                         <button class="btn-ghost btn-sm" onclick="resetDownloader()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M18 6L6 18M6 6l12 12"/>
                             </svg>
                             <span>Clear</span>
@@ -224,7 +223,7 @@
                                 <img id="videoThumbImg" src="" alt="Video Preview" onerror="handleThumbError(this)">
                                 <div class="duration-tag" id="videoDurationTag">00:00</div>
                                 <div class="play-overlay" onclick="togglePlayPreview()">
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                         <polygon points="5 3 19 12 5 21 5 3"/>
                                     </svg>
                                 </div>
@@ -237,15 +236,15 @@
                             <h3 class="video-title" id="videoTitle">Telegram Video Title</h3>
                             <div class="video-meta-chips">
                                 <span class="chip" id="chipResolution">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                                     <span id="metaResText">1920 × 1080</span>
                                 </span>
                                 <span class="chip" id="chipDuration">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                     <span id="metaDurationText">02:34</span>
                                 </span>
                                 <span class="chip" id="chipSize">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                                     <span id="metaSizeText">86 MB</span>
                                 </span>
                                 <span class="chip" id="chipFormat">
@@ -271,7 +270,7 @@
                                     <span class="sub-label" id="presetSummaryText">Direct original stream (Fastest)</span>
                                 </label>
                                 <div class="preset-options" id="presetSelectorGroup">
-                                    <button class="preset-btn active" data-preset="best" onclick="selectPreset('best')">
+                                    <button type="button" class="preset-btn active" data-preset="best" onclick="selectPreset('best')">
                                         <div class="preset-head">
                                             <span class="preset-name">Best Quality</span>
                                             <span class="preset-badge">Default</span>
@@ -280,7 +279,7 @@
                                         <div class="preset-est" id="estSizeBest">Est. ~85% size</div>
                                     </button>
 
-                                    <button class="preset-btn" data-preset="balanced" onclick="selectPreset('balanced')">
+                                    <button type="button" class="preset-btn" data-preset="balanced" onclick="selectPreset('balanced')">
                                         <div class="preset-head">
                                             <span class="preset-name">Balanced</span>
                                             <span class="preset-badge">Recommended</span>
@@ -289,7 +288,7 @@
                                         <div class="preset-est" id="estSizeBalanced">Est. ~55% size</div>
                                     </button>
 
-                                    <button class="preset-btn" data-preset="smallest" onclick="selectPreset('smallest')">
+                                    <button type="button" class="preset-btn" data-preset="smallest" onclick="selectPreset('smallest')">
                                         <div class="preset-head">
                                             <span class="preset-name">Smallest Size</span>
                                             <span class="preset-badge">Compact</span>
@@ -302,8 +301,8 @@
 
                             <!-- Advanced Settings Accordion -->
                             <div class="advanced-section">
-                                <button class="btn-accordion" onclick="toggleAdvancedSettings()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <button type="button" class="btn-accordion" onclick="toggleAdvancedSettings()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M12 15l-5-5h10l-5 5z"/>
                                     </svg>
                                     <span>Advanced Encoding Options</span>
@@ -342,8 +341,8 @@
 
                             <!-- Action Button -->
                             <div class="download-action-bar">
-                                <button class="btn-primary btn-lg" id="btnStartDownload" onclick="startDownload()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <button type="button" class="btn-primary btn-lg" id="btnStartDownload" onclick="startDownload()">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                                     </svg>
                                     <span>Download Video</span>
@@ -352,6 +351,210 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- SOLUTIONS & FEATURE GUIDE SECTION -->
+                <section class="landing-section" id="solutionsSection">
+                    <div class="section-header center">
+                        <span class="section-badge">Solutions & Feature Guide</span>
+                        <h2>Download Methods Comparison</h2>
+                        <p>Choose the optimal downloading approach for your specific Telegram link type</p>
+                    </div>
+
+                    <div class="comparison-grid">
+                        <!-- Public Links Card -->
+                        <div class="comparison-card">
+                            <div class="comp-card-header">
+                                <div class="comp-icon public-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="2" y1="12" x2="22" y2="12"/>
+                                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                    </svg>
+                                </div>
+                                <span class="comp-tag tag-online">100% Direct Online</span>
+                                <h3>Public Links</h3>
+                                <p class="comp-desc">For public Telegram channels, group links, and standard shared video posts.</p>
+                            </div>
+                            <ul class="comp-feature-list">
+                                <li>
+                                    <svg width="18" height="18" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span><strong>Direct Online Downloader:</strong> Instant paste and cloud stream analysis.</span>
+                                </li>
+                                <li>
+                                    <svg width="18" height="18" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span><strong>No Installation Required:</strong> Works natively inside any web browser.</span>
+                                </li>
+                                <li>
+                                    <svg width="18" height="18" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span><strong>Full HD Quality:</strong> Extract 1080p, 720p, or original source bitrate.</span>
+                                </li>
+                                <li>
+                                    <svg width="18" height="18" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span><strong>Zero Credentials:</strong> No Telegram password or phone code needed.</span>
+                                </li>
+                            </ul>
+                            <button class="btn-secondary btn-full" onclick="scrollToInput()">
+                                <span>Paste Public Link Above</span>
+                            </button>
+                        </div>
+
+                        <!-- Restricted Saving Links Card -->
+                        <div class="comparison-card featured">
+                            <div class="comp-card-header">
+                                <div class="comp-icon restricted-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                    </svg>
+                                </div>
+                                <span class="comp-tag tag-extension">Chrome Extension / Desktop Advice</span>
+                                <h3>Restricted Saving Links</h3>
+                                <p class="comp-desc">For private channels and posts with "Restrict Saving Content" (no forward / no save).</p>
+                            </div>
+                            <ul class="comp-feature-list">
+                                <li>
+                                    <svg width="18" height="18" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span><strong>Chrome Extension & Local Advice:</strong> Bypasses Telegram saving restrictions.</span>
+                                </li>
+                                <li>
+                                    <svg width="18" height="18" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span><strong>Local Token Extraction:</strong> Uses your authenticated browser session safely.</span>
+                                </li>
+                                <li>
+                                    <svg width="18" height="18" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span><strong>100% Private Architecture:</strong> Session keys never touch remote servers.</span>
+                                </li>
+                                <li>
+                                    <svg width="18" height="18" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span><strong>Protected Channel Support:</strong> Downloads non-forwardable videos cleanly.</span>
+                                </li>
+                            </ul>
+                            <button class="btn-primary btn-full" onclick="openModal('extensionModal')">
+                                <span>Install Chrome Extension</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3-STEP VISUAL PROCESS -->
+                    <div class="process-wrapper">
+                        <div class="section-header center">
+                            <h2>3-Step Simple Process</h2>
+                            <p>How to download Telegram videos in high definition</p>
+                        </div>
+
+                        <div class="process-grid">
+                            <div class="step-card">
+                                <div class="step-number">01</div>
+                                <div class="step-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                    </svg>
+                                </div>
+                                <h4>Copy Link</h4>
+                                <p>Copy any public or restricted Telegram video link from Telegram App, Desktop, or Web.</p>
+                            </div>
+
+                            <div class="step-card">
+                                <div class="step-number">02</div>
+                                <div class="step-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                    </svg>
+                                </div>
+                                <h4>Paste and Analyze</h4>
+                                <p>Paste the URL into the input field above and click Analyze to fetch stream info & resolution presets.</p>
+                            </div>
+
+                            <div class="step-card">
+                                <div class="step-number">03</div>
+                                <div class="step-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                    </svg>
+                                </div>
+                                <h4>Download HD</h4>
+                                <p>Select target resolution (1080p, 720p, Original) and click Download for high-speed saving.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TROUBLESHOOTING & FAQ ACCORDION SECTION -->
+                <section class="landing-section" id="faqSection">
+                    <div class="section-header center">
+                        <span class="section-badge">Help & Troubleshooting</span>
+                        <h2>Troubleshooting & Frequently Asked Questions</h2>
+                        <p>Learn how restricted link extraction works and why your account remains 100% safe.</p>
+                    </div>
+
+                    <!-- Highlight Security Banner -->
+                    <div class="security-banner">
+                        <div class="sec-banner-icon">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="M9 12l2 2 4-4"/>
+                            </svg>
+                        </div>
+                        <div class="sec-banner-text">
+                            <h4>Zero Credentials Security Guarantee</h4>
+                            <p><strong>No Telegram Password or Login Code is EVER required.</strong> Our tools extract media using local browser streams and public web protocol endpoints. Your Telegram credentials and session keys remain strictly on your device.</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ Accordion Container -->
+                    <div class="faq-accordion">
+                        <div class="faq-item active" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                <h3>Why do standard link scrapers throw "No video found" on restricted Telegram links?</h3>
+                                <span class="faq-icon">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Telegram allows channel administrators to enable "Restrict Saving Content" or set channels to Private mode. Standard online video scrapers attempt to fetch content anonymously without channel membership tokens. Because standard scrapers lack authorization, Telegram servers block them with "Media Not Found" or "Forbidden" errors. Our <strong>Chrome Extension</strong> bypasses this issue by capturing media directly inside your authorized Telegram Web browser session.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                <h3>Is any Telegram Password or Login Code required to download?</h3>
+                                <span class="faq-icon">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p><strong>Absolutely NOT.</strong> We will never ask you for your Telegram password, phone number, SMS verification code, or 2FA password. Public media is fetched via direct cloud analysis, and restricted media is saved locally through our Chrome Extension without transferring account credentials to external servers.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                <h3>How does the Chrome Extension handle restricted videos?</h3>
+                                <span class="faq-icon">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>When you open Telegram Web (`web.telegram.org`) in your browser while logged into your Telegram account, the Telegram Web app loads video stream chunks into browser memory. Our Chrome Extension hooks into these media buffers to compile and save the complete MP4 file directly to your local downloads folder, even if the channel owner disabled forwarding and saving.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                <h3>What video resolutions and formats are supported?</h3>
+                                <span class="faq-icon">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>We support source resolution up to 4K, 1080p Full HD, 720p HD, and 480p SD. Downloaded videos are exported as MP4 or MKV container files. You can also select smart H.264 compression presets (Best Quality, Balanced, Smallest Size) to save storage space while preserving visual fidelity.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item" onclick="toggleFaq(this)">
+                            <div class="faq-question">
+                                <h3>How do I resolve slow download speeds or network errors?</h3>
+                                <span class="faq-icon">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>If your ISP or network blocks direct access to Telegram media servers, go to the <strong>Settings</strong> tab in TG Downloader to add a custom SOCKS5 or HTTP proxy URL (`socks5://127.0.0.1:1080`). Alternatively, turn on a system VPN (such as Cloudflare WARP or ProtonVPN) for maximum speed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </section>
 
             <!-- TAB 2: ACTIVE DOWNLOADS & QUEUE -->
@@ -363,7 +566,7 @@
                     </div>
                     <div class="pane-header-actions">
                         <button class="btn-secondary" onclick="openDownloadFolder()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                             </svg>
                             <span>Open Downloads Folder</span>
@@ -378,7 +581,7 @@
                 <!-- Empty queue state -->
                 <div class="empty-state" id="emptyQueueState">
                     <div class="empty-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                         </svg>
                     </div>
@@ -397,7 +600,7 @@
                     </div>
                     <div class="pane-header-actions">
                         <button class="btn-danger-ghost" id="btnClearHistory" onclick="clearHistory()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"/>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                             </svg>
@@ -426,7 +629,7 @@
 
                 <div class="empty-state" id="emptyHistoryState" style="display: none;">
                     <div class="empty-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
@@ -453,7 +656,7 @@
                             <div class="input-with-button">
                                 <input type="text" id="settingDownloadDir" placeholder="C:\Users\...\Downloads">
                                 <button type="button" class="btn-secondary" onclick="openDownloadFolder()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                                     </svg>
                                     <span>Open</span>
@@ -526,7 +729,7 @@
 
                 <div class="settings-footer">
                     <button class="btn-primary" onclick="saveSettings()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                             <polyline points="17 21 17 13 7 13 7 21"/>
                             <polyline points="7 3 7 8 15 8"/>
@@ -536,12 +739,150 @@
                 </div>
             </section>
         </main>
+
+        <!-- FOOTER & RESOURCES -->
+        <footer class="footer">
+            <div class="footer-container">
+                <div class="footer-brand">
+                    <div class="brand">
+                        <div class="brand-icon sm">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </div>
+                        <span class="footer-brand-title">TG Downloader</span>
+                    </div>
+                    <p class="footer-desc">The ultimate high-speed private video downloader for Telegram media with zero login credentials required.</p>
+                </div>
+
+                <div class="footer-links-group">
+                    <div class="footer-col">
+                        <h4>Resources</h4>
+                        <a href="javascript:void(0)" onclick="openModal('extensionModal')">Chrome Extension Guide</a>
+                        <a href="javascript:void(0)" onclick="scrollToInput()">Public Link Downloader</a>
+                        <a href="javascript:void(0)" onclick="switchTab('settings')">Proxy & Settings</a>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Legal & Privacy</h4>
+                        <a href="javascript:void(0)" onclick="openModal('termsModal')">Terms of Service</a>
+                        <a href="javascript:void(0)" onclick="openModal('privacyModal')">Privacy Policy</a>
+                        <a href="javascript:void(0)" onclick="openModal('extensionModal')">Security Architecture</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 TG Downloader / TeleStream - Telegram Private Video Downloader. All rights reserved.</span>
+                <span class="footer-tech">Powered by FastAPI & Modern Web Tech</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- CHROME EXTENSION TUTORIAL MODAL -->
+    <div class="modal-overlay" id="extensionModal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Chrome Extension Installation Tutorial</h3>
+                <button class="modal-close" onclick="closeModal('extensionModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-banner">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <div>
+                        <h4>How to Download Restricted Telegram Videos</h4>
+                        <p>Channels with "Restrict Saving Content" enabled can be downloaded securely using our Chrome Extension.</p>
+                    </div>
+                </div>
+
+                <div class="tutorial-steps">
+                    <div class="tut-step">
+                        <div class="tut-step-num">1</div>
+                        <div class="tut-step-content">
+                            <h5>Enable Chrome Developer Mode</h5>
+                            <p>Open Google Chrome and navigate to <code>chrome://extensions</code> in your address bar. Turn on <strong>"Developer mode"</strong> in the top right corner.</p>
+                        </div>
+                    </div>
+
+                    <div class="tut-step">
+                        <div class="tut-step-num">2</div>
+                        <div class="tut-step-content">
+                            <h5>Load TG Downloader Extension</h5>
+                            <p>Click <strong>"Load unpacked"</strong> and select the <code>extension</code> folder inside your TG Downloader installation directory.</p>
+                        </div>
+                    </div>
+
+                    <div class="tut-step">
+                        <div class="tut-step-num">3</div>
+                        <div class="tut-step-content">
+                            <h5>Open Telegram Web</h5>
+                            <p>Go to <code>web.telegram.org</code> and log into your Telegram account. Open the restricted channel or group containing the video.</p>
+                        </div>
+                    </div>
+
+                    <div class="tut-step">
+                        <div class="tut-step-num">4</div>
+                        <div class="tut-step-content">
+                            <h5>Click Download HD</h5>
+                            <p>Play the restricted video on Telegram Web. Click the TG Downloader extension icon in your Chrome toolbar to instantly download the MP4 file to your local computer.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="closeModal('extensionModal')">Got It</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TERMS OF SERVICE MODAL -->
+    <div class="modal-overlay" id="termsModal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Terms of Service</h3>
+                <button class="modal-close" onclick="closeModal('termsModal')">×</button>
+            </div>
+            <div class="modal-body legal-text">
+                <p>Welcome to <strong>TG Downloader (TeleStream)</strong>. By accessing or using this downloader service, you agree to comply with these terms:</p>
+                <h4>1. Personal Fair Use</h4>
+                <p>TG Downloader is designed strictly for personal backup and offline viewing of media you have lawful permission to access. You are responsible for ensuring your use complies with local copyright laws.</p>
+                <h4>2. No Account Scraping or Abuse</h4>
+                <p>You agree not to use automated bots or scripts to overload Telegram media endpoints or bypass third-party rate limits in violation of applicable laws.</p>
+                <h4>3. Service Availability</h4>
+                <p>TG Downloader is provided "as-is" without warranty. We reserve the right to update or modify downloader features at any time.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('termsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRIVACY POLICY MODAL -->
+    <div class="modal-overlay" id="privacyModal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Privacy Policy</h3>
+                <button class="modal-close" onclick="closeModal('privacyModal')">×</button>
+            </div>
+            <div class="modal-body legal-text">
+                <p>Your privacy and account security are our highest priority at <strong>TG Downloader</strong>:</p>
+                <h4>1. Zero Credential Collection</h4>
+                <p><strong>We NEVER request, collect, or store your Telegram password, phone number, or login verification code.</strong> Your Telegram account credentials remain 100% private and untouched.</p>
+                <h4>2. Local Data Processing</h4>
+                <p>All download processing and file saving take place directly on your local device. Downloads and history records are stored in your local database environment.</p>
+                <h4>3. No Third-Party Data Selling</h4>
+                <p>We do not track, profile, or sell your personal data or downloaded media history to third parties.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('privacyModal')">Close</button>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Firebase SDKs via ES module script -->
+    <!-- Firebase SDKs & Main Script -->
     <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>

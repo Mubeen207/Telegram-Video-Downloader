@@ -48,22 +48,24 @@ async function authFetch(url, options = {}) {
 
 // Authentication Listeners & State Machine
 onAuthStateChanged(auth, async (user) => {
-    const authScreen = document.getElementById("authScreen");
-    const appDashboard = document.getElementById("appDashboard");
-    const authSpinner = document.getElementById("authSpinner");
-    const btnGoogle = document.getElementById("btnGoogleSignIn");
+    const navBtnGoogle = document.getElementById("navBtnGoogleSignIn");
+    const userBadge = document.getElementById("userProfileBadge");
 
     if (user) {
         // Logged In
         currentUser = user;
-        authScreen.style.display = "none";
-        appDashboard.style.display = "flex";
+        if (navBtnGoogle) navBtnGoogle.style.display = "none";
+        if (userBadge) userBadge.style.display = "flex";
 
         // Update User Profile Chip
-        document.getElementById("userAvatarImg").src = user.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
-        document.getElementById("userDisplayName").textContent = user.displayName || "Google User";
-        document.getElementById("userEmailText").textContent = user.email || "";
-        document.getElementById("diagUserUid").textContent = user.uid;
+        const avatarEl = document.getElementById("userAvatarImg");
+        if (avatarEl) avatarEl.src = user.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+        const nameEl = document.getElementById("userDisplayName");
+        if (nameEl) nameEl.textContent = user.displayName || "Google User";
+        const emailEl = document.getElementById("userEmailText");
+        if (emailEl) emailEl.textContent = user.email || "";
+        const uidEl = document.getElementById("diagUserUid");
+        if (uidEl) uidEl.textContent = user.uid;
 
         // Initialize dashboard data
         await loadSettings();
@@ -76,32 +78,20 @@ onAuthStateChanged(auth, async (user) => {
             clearInterval(activeTasksPollingInterval);
             activeTasksPollingInterval = null;
         }
-        appDashboard.style.display = "none";
-        authScreen.style.display = "flex";
-        resetDownloader();
+        if (navBtnGoogle) navBtnGoogle.style.display = "flex";
+        if (userBadge) userBadge.style.display = "none";
     }
-
-    if (btnGoogle) btnGoogle.disabled = false;
-    if (authSpinner) authSpinner.style.display = "none";
 });
 
 // Google Sign-In Handler
 window.handleGoogleSignIn = async function() {
-    const btn = document.getElementById("btnGoogleSignIn");
-    const spinner = document.getElementById("authSpinner");
-    const errBanner = document.getElementById("authErrorBanner");
-
-    errBanner.style.display = "none";
-    btn.disabled = true;
-    spinner.style.display = "inline-block";
+    const btn = document.getElementById("navBtnGoogleSignIn");
 
     try {
         await signInWithPopup(auth, googleProvider);
         showToast("Signed in with Google successfully!", "success");
     } catch (error) {
         console.error("Google Auth error:", error);
-        btn.disabled = false;
-        spinner.style.display = "none";
         
         let message = "Failed to sign in with Google. Please try again.";
         if (error.code === "auth/unauthorized-domain") {
@@ -113,8 +103,7 @@ window.handleGoogleSignIn = async function() {
         } else if (error.message) {
             message = error.message;
         }
-        errBanner.textContent = message;
-        errBanner.style.display = "block";
+        showToast(message, "error");
     }
 };
 
@@ -719,3 +708,34 @@ function escapeHtml(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+// Accordion Toggle
+window.toggleFaq = function(element) {
+    if (!element) return;
+    const isActive = element.classList.contains("active");
+    document.querySelectorAll(".faq-item").forEach(item => item.classList.remove("active"));
+    if (!isActive) {
+        element.classList.add("active");
+    }
+};
+
+// Modals
+window.openModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = "flex";
+};
+
+window.closeModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = "none";
+};
+
+// Scroll to Input
+window.scrollToInput = function() {
+    const input = document.getElementById("telegramUrlInput");
+    if (input) {
+        input.scrollIntoView({ behavior: "smooth", block: "center" });
+        input.focus();
+    }
+};
+

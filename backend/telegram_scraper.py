@@ -214,9 +214,10 @@ async def extract_telegram_video_info(url: str, user_id: str = "default") -> Dic
     # Proxy check (from settings or env)
     proxy_url = get_setting("proxy", user_id=user_id) or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or None
 
-    # Step 1: Fast parallel scrape of embed_url, s_url, and normalized_url
+    # Step 1: Parallel scrape of embed_url, s_url, normalized_url, and mirror telegram.dog
+    dog_url = f"https://telegram.dog/s/{channel}/{msg_id}"
     client_kwargs = {
-        "timeout": 4.0,
+        "timeout": 12.0,
         "follow_redirects": True,
         "headers": headers,
         "verify": False
@@ -230,6 +231,7 @@ async def extract_telegram_video_info(url: str, user_id: str = "default") -> Dic
             scrape_tasks = [
                 client.get(embed_url),
                 client.get(s_url),
+                client.get(dog_url),
                 client.get(normalized_url)
             ]
             

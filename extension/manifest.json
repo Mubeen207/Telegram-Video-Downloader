@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "TG Private Video Downloader",
+  "version": "1.0.0",
+  "description": "Download Telegram videos, public media, and restricted saving posts directly from Telegram Web.",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://web.telegram.org/*",
+    "https://*.telesco.pe/*",
+    "https://*.t.me/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "TG Video Downloader"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://web.telegram.org/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
