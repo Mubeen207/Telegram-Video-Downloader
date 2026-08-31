@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Video Downloader - Fast & Free</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>TeleStream</h1>
+                    <span class="badge badge-subtle">Video Downloader</span>
+                </div>
+            </div>
+
+            <nav class="nav-tabs">
+                <button class="nav-tab active" id="tabBtnDownloader" onclick="switchTab('downloader')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    <span>Downloader</span>
+                </button>
+                <button class="nav-tab" id="tabBtnQueue" onclick="switchTab('queue')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Downloads</span>
+                    <span class="counter-badge" id="activeTasksBadge" style="display: none;">0</span>
+                </button>
+                <button class="nav-tab" id="tabBtnHistory" onclick="switchTab('history')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/>
+                    </svg>
+                    <span>History</span>
+                </button>
+                <button class="nav-tab" id="tabBtnSettings" onclick="switchTab('settings')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <div class="nav-actions">
+                <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <div class="system-pill" id="ffmpegStatusPill" title="FFmpeg Status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">FFmpeg: Detecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- TAB 1: DOWNLOADER -->
+            <section class="tab-pane active" id="paneDownloader">
+                <div class="hero-card">
+                    <div class="hero-header">
+                        <h2>Download Public Telegram Videos</h2>
+                        <p>No Telegram login required. Paste a public channel message link to analyze, customize quality, and download in full speed.</p>
+                    </div>
+
+                    <form class="url-input-form" onsubmit="event.preventDefault(); handleAnalyze();">
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                            <input 
+                                type="text" 
+                                id="telegramUrlInput" 
+                                placeholder="Paste Telegram link (e.g. https://t.me/channel_name/123)"
+                                autocomplete="off"
+                                spellcheck="false"
+                            >
+                            <button type="button" class="btn-paste" onclick="pasteFromClipboard()" title="Paste from clipboard">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                </svg>
+                                <span>Paste</span>
+                            </button>
+                        </div>
+                        <button type="submit" class="btn-primary btn-analyze" id="btnAnalyze">
+                            <span class="btn-text">Analyze Video</span>
+                            <span class="btn-spinner" style="display: none;"></span>
+                            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                        </button>
+                    </form>
+
+                    <!-- Alert message container -->
+                    <div class="alert-container" id="alertContainer" style="display: none;">
+                        <div class="alert-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                        </div>
+                        <div class="alert-message" id="alertMessage"></div>
+                        <button class="alert-close" onclick="hideAlert()">×</button>
+                    </div>
+
+                    <!-- Supported Format hint -->
+                    <div class="url-hints">
+                        <span>Supported:</span>
+                        <code>https://t.me/channel/123</code>
+                        <code>https://t.me/channel/123?single</code>
+                        <code>https://telegram.me/channel/123</code>
+                    </div>
+                </div>
+
+                <!-- Video Preview & Download Options Card -->
+                <div class="video-preview-card" id="videoPreviewCard" style="display: none;">
+                    <div class="preview-header">
+                        <div class="header-tag">
+                            <span class="live-dot"></span>
+                            <span>Video Ready for Download</span>
+                        </div>
+                        <button class="btn-ghost btn-sm" onclick="resetDownloader()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                            <span>Clear</span>
+                        </button>
+                    </div>
+
+                    <div class="preview-layout">
+                        <!-- Media thumbnail container -->
+                        <div class="media-column">
+                            <div class="thumbnail-wrapper" id="thumbWrapper">
+                                <img id="videoThumbImg" src="" alt="Video Preview" onerror="handleThumbError(this)">
+                                <div class="duration-tag" id="videoDurationTag">00:00</div>
+                                <div class="play-overlay" onclick="togglePlayPreview()">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <polygon points="5 3 19 12 5 21 5 3"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <video id="html5VideoPlayer" controls style="display:none; width: 100%; border-radius: 12px; margin-top: 8px;"></video>
+                        </div>
+
+                        <!-- Video info & controls -->
+                        <div class="info-column">
+                            <h3 class="video-title" id="videoTitle">Telegram Video Title</h3>
+                            <div class="video-meta-chips">
+                                <span class="chip" id="chipResolution">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                    <span id="metaResText">1920 × 1080</span>
+                                </span>
+                                <span class="chip" id="chipDuration">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <span id="metaDurationText">02:34</span>
+                                </span>
+                                <span class="chip" id="chipSize">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                    <span id="metaSizeText">86 MB</span>
+                                </span>
+                                <span class="chip" id="chipFormat">
+                                    <span id="metaFormatText">MP4</span>
+                                </span>
+                            </div>
+
+                            <!-- Quality Selection -->
+                            <div class="selection-group">
+                                <label class="group-label">
+                                    <span>Resolution Quality</span>
+                                    <span class="sub-label">Only actual source resolutions available</span>
+                                </label>
+                                <div class="quality-options" id="qualitySelectorGroup">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Compression / Size Presets -->
+                            <div class="selection-group">
+                                <label class="group-label">
+                                    <span>Size & Compression</span>
+                                    <span class="sub-label" id="presetSummaryText">Direct original stream (Fastest)</span>
+                                </label>
+                                <div class="preset-options" id="presetSelectorGroup">
+                                    <button class="preset-btn active" data-preset="best" onclick="selectPreset('best')">
+                                        <div class="preset-head">
+                                            <span class="preset-name">Best Quality</span>
+                                            <span class="preset-badge">Default</span>
+                                        </div>
+                                        <div class="preset-desc">Max quality with light optimization</div>
+                                        <div class="preset-est" id="estSizeBest">Est. ~85% size</div>
+                                    </button>
+
+                                    <button class="preset-btn" data-preset="balanced" onclick="selectPreset('balanced')">
+                                        <div class="preset-head">
+                                            <span class="preset-name">Balanced</span>
+                                            <span class="preset-badge">Recommended</span>
+                                        </div>
+                                        <div class="preset-desc">Smart compression, 50% smaller</div>
+                                        <div class="preset-est" id="estSizeBalanced">Est. ~55% size</div>
+                                    </button>
+
+                                    <button class="preset-btn" data-preset="smallest" onclick="selectPreset('smallest')">
+                                        <div class="preset-head">
+                                            <span class="preset-name">Smallest Size</span>
+                                            <span class="preset-badge">Compact</span>
+                                        </div>
+                                        <div class="preset-desc">Max compression for low storage</div>
+                                        <div class="preset-est" id="estSizeSmallest">Est. ~30% size</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Advanced Settings Accordion -->
+                            <div class="advanced-section">
+                                <button class="btn-accordion" onclick="toggleAdvancedSettings()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 15l-5-5h10l-5 5z"/>
+                                    </svg>
+                                    <span>Advanced Encoding Options</span>
+                                </button>
+                                <div class="advanced-drawer" id="advancedDrawer" style="display: none;">
+                                    <div class="grid-2">
+                                        <div class="form-control">
+                                            <label>Output Filename</label>
+                                            <input type="text" id="customFilenameInput" placeholder="filename.mp4">
+                                        </div>
+                                        <div class="form-control">
+                                            <label>CRF (Constant Rate Factor: 0-51)</label>
+                                            <input type="number" id="customCrfInput" placeholder="Auto" min="0" max="51">
+                                        </div>
+                                    </div>
+                                    <div class="grid-2" style="margin-top: 10px;">
+                                        <div class="form-control">
+                                            <label>Target FPS</label>
+                                            <select id="customFpsSelect">
+                                                <option value="">Source FPS (Original)</option>
+                                                <option value="60">60 FPS</option>
+                                                <option value="30">30 FPS</option>
+                                                <option value="24">24 FPS</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-control">
+                                            <label>Container Format</label>
+                                            <select id="customFormatSelect">
+                                                <option value="mp4" selected>MP4 (Broadest compatibility)</option>
+                                                <option value="mkv">MKV (Matroska)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Button -->
+                            <div class="download-action-bar">
+                                <button class="btn-primary btn-lg" id="btnStartDownload" onclick="startDownload()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                    </svg>
+                                    <span>Download Video</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: ACTIVE DOWNLOADS & QUEUE -->
+            <section class="tab-pane" id="paneQueue">
+                <div class="pane-header">
+                    <div>
+                        <h2>Download Queue & Active Transfers</h2>
+                        <p>Track real-time progress, download speed, and manage concurrent tasks.</p>
+                    </div>
+                    <div class="pane-header-actions">
+                        <button class="btn-secondary" onclick="openDownloadFolder()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            <span>Open Downloads Folder</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tasks-container" id="tasksList">
+                    <!-- Dynamic task cards render here -->
+                </div>
+
+                <!-- Empty queue state -->
+                <div class="empty-state" id="emptyQueueState">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                    </div>
+                    <h3>No active downloads</h3>
+                    <p>When you start downloading Telegram videos, they will appear here with live speed and ETA.</p>
+                    <button class="btn-primary" onclick="switchTab('downloader')">Download a Video</button>
+                </div>
+            </section>
+
+            <!-- TAB 3: DOWNLOAD HISTORY -->
+            <section class="tab-pane" id="paneHistory">
+                <div class="pane-header">
+                    <div>
+                        <h2>Download History</h2>
+                        <p>Local record of completed downloads on this machine.</p>
+                    </div>
+                    <div class="pane-header-actions">
+                        <button class="btn-danger-ghost" id="btnClearHistory" onclick="clearHistory()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            <span>Clear All History</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="history-table-container">
+                    <table class="history-table" id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Resolution</th>
+                                <th>Size</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state" id="emptyHistoryState" style="display: none;">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3>No history yet</h3>
+                    <p>Your downloaded videos will be recorded here for fast access.</p>
+                </div>
+            </section>
+
+            <!-- TAB 4: SETTINGS -->
+            <section class="tab-pane" id="paneSettings">
+                <div class="pane-header">
+                    <div>
+                        <h2>Application Settings</h2>
+                        <p>Configure storage locations, default quality presets, and system options.</p>
+                    </div>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- Download Directory Card -->
+                    <div class="settings-card">
+                        <h3>Storage & Directory</h3>
+                        <div class="form-control">
+                            <label>Download Location (Windows)</label>
+                            <div class="input-with-button">
+                                <input type="text" id="settingDownloadDir" placeholder="C:\Users\...\Downloads">
+                                <button type="button" class="btn-secondary" onclick="openDownloadFolder()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                    <span>Open</span>
+                                </button>
+                            </div>
+                            <small class="help-text">Videos are automatically saved here with sanitized filenames.</small>
+                        </div>
+                    </div>
+
+                    <!-- Defaults Card -->
+                    <div class="settings-card">
+                        <h3>Preferences</h3>
+                        <div class="form-control">
+                            <label>Default Quality</label>
+                            <select id="settingDefaultQuality">
+                                <option value="original">Original (Source Quality)</option>
+                                <option value="1080p">1080p Full HD</option>
+                                <option value="720p">720p HD</option>
+                                <option value="480p">480p SD</option>
+                            </select>
+                        </div>
+
+                        <div class="form-control" style="margin-top: 14px;">
+                            <label>Default Compression Preset</label>
+                            <select id="settingDefaultPreset">
+                                <option value="best">Best Quality (Direct/Light)</option>
+                                <option value="balanced">Balanced (Optimized size)</option>
+                                <option value="smallest">Smallest Size (Max compression)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-control" style="margin-top: 14px;">
+                            <label>Max Simultaneous Downloads</label>
+                            <select id="settingMaxDownloads">
+                                <option value="1">1 Download at a time</option>
+                                <option value="2">2 Concurrent Downloads</option>
+                                <option value="3">3 Concurrent Downloads</option>
+                                <option value="5">5 Concurrent Downloads</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- System & Diagnostics Card -->
+                    <div class="settings-card">
+                        <h3>System Diagnostics</h3>
+                        <div class="diag-item">
+                            <span class="diag-label">Authentication Mode:</span>
+                            <span class="badge badge-success">No Login Required (Zero Credentials)</span>
+                        </div>
+                        <div class="diag-item">
+                            <span class="diag-label">FFmpeg Status:</span>
+                            <span class="diag-value" id="diagFfmpeg">Checking...</span>
+                        </div>
+                        <div class="diag-item">
+                            <span class="diag-label">Operating System:</span>
+                            <span class="diag-value">Windows Desktop (Chrome Compatible)</span>
+                        </div>
+                        <div class="diag-item">
+                            <span class="diag-label">Target Architecture:</span>
+                            <span class="diag-value">FastAPI Async Streaming + FFmpeg</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-footer">
+                    <button class="btn-primary" onclick="saveSettings()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        <span>Save Settings</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
