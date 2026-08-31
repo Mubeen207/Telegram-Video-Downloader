@@ -220,7 +220,12 @@ class DownloadManager:
             headers["Range"] = f"bytes={start_byte}-"
 
         try:
-            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            proxy_url = get_setting("proxy", user_id=task.user_id) or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or None
+            client_kwargs = {"timeout": 30.0, "follow_redirects": True}
+            if proxy_url:
+                client_kwargs["proxy"] = proxy_url
+
+            async with httpx.AsyncClient(**client_kwargs) as client:
                 async with client.stream("GET", task.direct_url, headers=headers) as response:
                     # Handle Range headers
                     if response.status_code == 206: # Partial Content

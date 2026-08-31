@@ -56,7 +56,7 @@ async def analyze_url(
     req: AnalyzeRequest,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    result = await extract_telegram_video_info(req.url)
+    result = await extract_telegram_video_info(req.url, user_id=current_user["uid"])
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Unable to analyze Telegram video link."))
     return result

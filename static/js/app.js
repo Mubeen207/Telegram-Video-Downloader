@@ -438,11 +438,11 @@ window.startDownload = async function() {
     }
 };
 
-// Download Tasks & Queue Polling
+// Download Tasks & Adaptive Queue Polling
 function startPollingTasks() {
     fetchTasks();
     if (!activeTasksPollingInterval) {
-        activeTasksPollingInterval = setInterval(fetchTasks, 1000);
+        activeTasksPollingInterval = setInterval(fetchTasks, 3000);
     }
 }
 
@@ -452,7 +452,16 @@ async function fetchTasks() {
         const res = await authFetch("/api/downloads");
         if (!res.ok) return;
         const data = await res.json();
-        renderTasks(data.tasks || []);
+        const tasks = data.tasks || [];
+        renderTasks(tasks);
+
+        const hasActive = tasks.some(t => ["downloading", "queued", "processing"].includes(t.status));
+        const desiredInterval = hasActive ? 1000 : 4000;
+        
+        if (activeTasksPollingInterval) {
+            clearInterval(activeTasksPollingInterval);
+            activeTasksPollingInterval = setInterval(fetchTasks, desiredInterval);
+        }
     } catch (e) {}
 }
 
@@ -634,6 +643,7 @@ async function loadSettings() {
         appSettings = data.settings || {};
 
         document.getElementById("settingDownloadDir").value = appSettings.download_dir || "";
+        document.getElementById("settingProxy").value = appSettings.proxy || "";
         document.getElementById("settingDefaultQuality").value = appSettings.default_quality || "original";
         document.getElementById("settingDefaultPreset").value = appSettings.default_preset || "best";
         document.getElementById("settingMaxDownloads").value = appSettings.max_concurrent_downloads || "3";
@@ -643,6 +653,7 @@ async function loadSettings() {
 window.saveSettings = async function() {
     const updated = {
         download_dir: document.getElementById("settingDownloadDir").value.trim(),
+        proxy: document.getElementById("settingProxy").value.trim(),
         default_quality: document.getElementById("settingDefaultQuality").value,
         default_preset: document.getElementById("settingDefaultPreset").value,
         max_concurrent_downloads: document.getElementById("settingMaxDownloads").value

@@ -1,15 +1,16 @@
+import os
 import re
 import math
+import asyncio
 from typing import Dict, Any, Optional, List
 import httpx
 from bs4 import BeautifulSoup
 import yt_dlp
+from backend.database import get_setting
 
 def validate_and_normalize_telegram_url(url: str) -> Dict[str, Any]:
     """
     Validates Telegram link and extracts channel/post information.
-    Supports standard messages, forwarded messages, non-forwarded messages,
-    topic threads (t.me/channel/topic_id/msg_id), and URLs with query parameters.
     """
     url = url.strip()
     if not url:
@@ -20,26 +21,21 @@ def validate_and_normalize_telegram_url(url: str) -> Dict[str, Any]:
     if re.search(private_pattern, url):
         return {
             "valid": False,
-            "error": "This Telegram link is from a private channel/group and is not publicly accessible without authentication."
+            "error": "This Telegram link is from a private channel/group ('t.me/c/...') and is not publicly accessible without Telegram session authentication."
         }
 
-    # Match public telegram post patterns including topic threads:
-    # https://t.me/channel_name/123
-    # https://t.me/channel_name/topic_id/123
-    # https://t.me/s/channel_name/123
-    # https://telegram.me/channel_name/123
+    # Match public telegram post patterns including topic threads
     public_pattern = r"(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\/(?:s\/)?([a-zA-Z0-9_+]+)(?:\/\d+)?\/(\d+)"
     match = re.search(public_pattern, url)
     
     if not match:
-        # Fallback simple channel/id match
         simple_pattern = r"(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\/(?:s\/)?([a-zA-Z0-9_+]+)\/(\d+)"
         match = re.search(simple_pattern, url)
 
     if not match:
         return {
             "valid": False,
-            "error": "Invalid Telegram link format. Please provide a link like: https://t.me/channel_name/123"
+            "error": "Invalid Telegram link format. Please provide a public link like: https://t.me/channel_name/123"
         }
 
     channel, msg_id = match.groups()
@@ -74,10 +70,130 @@ def format_duration(seconds: Optional[int]) -> str:
         return f"{h:02d}:{m:02d}:{s:02d}"
     return f"{m:02d}:{s:02d}"
 
-async def extract_telegram_video_info(url: str) -> Dict[str, Any]:
+def parse_telegram_html(html: str, channel: str, msg_id: str, normalized_url: str) -> Optional[Dict[str, Any]]:
     """
-    Extracts video metadata from public Telegram URL (both forwarded and non-forwarded videos,
-    video notes, document video files, and channel posts).
+    Fast synchronous DOM & regex parser for Telegram HTML preview pages.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Check for Telegram restriction notices
+    error_el = soup.select_one(".tgme_widget_message_error")
+    if error_el:
+        error_text = error_el.get_text(strip=True).lower()
+        if any(w in error_text for w in ["restrict", "protected", "private", "access denied", "forbidden", "saving"]):
+            return {
+                "restricted": True,
+                "error": "This Telegram post has content protection enabled ('Restrict Saving Content'). Media cannot be downloaded from restricted channels."
+            }
+
+    target_container = soup.select_one(f'[data-post="{channel}/{msg_id}"]') or soup
+
+    # Strategy 1: <video> element
+    video_el = target_container.select_one(
+        "video.tgme_widget_message_video, "
+        "video.tgme_widget_message_roundvideo, "
+        ".tgme_widget_message_video_player video, "
+        ".tgme_widget_message_bubble video, "
+        ".tgme_widget_message_wrap video, "
+        "video"
+    )
+    direct_url = None
+    if video_el:
+        direct_url = video_el.get("src")
+        if not direct_url:
+            source_tag = video_el.select_one("source")
+            if source_tag:
+                direct_url = source_tag.get("src")
+
+    # Strategy 2: Document video attachment
+    if not direct_url:
+        doc_video = target_container.select_one(
+            "a.tgme_widget_message_document_wrap[href*='.mp4'], "
+            "a.tgme_widget_message_document_wrap[href*='.mkv'], "
+            "a.tgme_widget_message_document_wrap[href*='.mov'], "
+            "a.tgme_widget_message_document_wrap[href*='.webm']"
+        )
+        if doc_video:
+            direct_url = doc_video.get("href")
+
+    # Strategy 3: Fast Regex scan for direct CDN video streams
+    if not direct_url:
+        video_url_matches = re.findall(
+            r'(https?:\/\/[^"\'\s<>]+\.(?:mp4|m4v|mov|webm)(?:\?[^"\'\s<>]*)?)',
+            html
+        )
+        for match_url in video_url_matches:
+            if "telegram" in match_url or "telesco.pe" in match_url or "cdn" in match_url:
+                direct_url = match_url
+                break
+        if not direct_url and video_url_matches:
+            direct_url = video_url_matches[0]
+
+    # Strategy 4: telesco.pe round video
+    if not direct_url:
+        telescope_match = re.search(r'(https?:\/\/telesco\.pe\/[^"\'\s<>]+\.mp4)', html)
+        if telescope_match:
+            direct_url = telescope_match.group(1)
+
+    if not direct_url:
+        # Check if post exists but is restricted
+        has_message_bubble = bool(target_container.select_one(".tgme_widget_message, .tgme_widget_message_bubble, .tgme_widget_message_wrap"))
+        has_video_placeholder = bool(target_container.select_one(".tgme_widget_message_video_thumb, .tgme_widget_message_video_player, .tgme_widget_message_roundvideo_thumb, .message_media_not_supported"))
+        if has_message_bubble and has_video_placeholder:
+            return {
+                "restricted": True,
+                "error": "This Telegram post has content protection enabled ('Restrict Saving Content'). Media cannot be downloaded."
+            }
+        return None
+
+    if direct_url.startswith("//"):
+        direct_url = "https:" + direct_url
+    elif direct_url.startswith("/") and not direct_url.startswith("http"):
+        direct_url = "https://t.me" + direct_url
+
+    # Thumbnail
+    thumbnail = None
+    thumb_el = target_container.select_one(
+        ".tgme_widget_message_video_thumb, "
+        ".tgme_widget_message_roundvideo_thumb, "
+        ".tgme_widget_message_photo_wrap"
+    )
+    if thumb_el and "style" in thumb_el.attrs:
+        match = re.search(r"background-image:\s*url\(['\"]?(.*?)['\"]?\)", thumb_el["style"])
+        if match:
+            thumbnail = match.group(1)
+
+    # Duration
+    duration = 0
+    time_el = target_container.select_one(
+        ".tgme_widget_message_video_duration, "
+        ".tgme_widget_message_roundvideo_duration, "
+        "time"
+    )
+    if time_el:
+        time_str = time_el.get_text(strip=True)
+        parts = time_str.split(":")
+        if len(parts) == 2:
+            duration = int(parts[0]) * 60 + int(parts[1])
+        elif len(parts) == 3:
+            duration = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+
+    # Title
+    text_el = target_container.select_one(".tgme_widget_message_text")
+    title = text_el.get_text(strip=True)[:60] if text_el else f"Telegram_{channel}_{msg_id}"
+    if not title:
+        title = f"Telegram_{channel}_{msg_id}"
+
+    return {
+        "direct_url": direct_url,
+        "title": title,
+        "duration": duration,
+        "thumbnail": thumbnail
+    }
+
+async def extract_telegram_video_info(url: str, user_id: str = "default") -> Dict[str, Any]:
+    """
+    High-speed asynchronous video metadata extractor with optional Proxy support.
     """
     validation = validate_and_normalize_telegram_url(url)
     if not validation["valid"]:
@@ -85,249 +201,135 @@ async def extract_telegram_video_info(url: str) -> Dict[str, Any]:
 
     normalized_url = validation["normalized_url"]
     embed_url = validation["embed_url"]
-    s_url = validation.get("s_url", f"https://t.me/s/{validation['channel']}/{validation['msg_id']}")
+    s_url = validation["s_url"]
     channel = validation["channel"]
     msg_id = validation["msg_id"]
 
-    # 1. Primary extraction using yt-dlp
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Referer": "https://t.me/"
+    }
+
+    # Proxy check (from settings or env)
+    proxy_url = get_setting("proxy", user_id=user_id) or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or None
+
+    # Step 1: Fast parallel scrape of embed_url, s_url, and normalized_url
+    client_kwargs = {
+        "timeout": 4.0,
+        "follow_redirects": True,
+        "headers": headers,
+        "verify": False
+    }
+    if proxy_url:
+        client_kwargs["proxy"] = proxy_url
+
+    has_timeout = False
+    try:
+        async with httpx.AsyncClient(**client_kwargs) as client:
+            scrape_tasks = [
+                client.get(embed_url),
+                client.get(s_url),
+                client.get(normalized_url)
+            ]
+            
+            responses = await asyncio.gather(*scrape_tasks, return_exceptions=True)
+
+            for res in responses:
+                if isinstance(res, Exception):
+                    has_timeout = True
+                    continue
+                if isinstance(res, httpx.Response) and res.status_code == 200:
+                    parsed = parse_telegram_html(res.text, channel, msg_id, normalized_url)
+                    if parsed:
+                        if parsed.get("restricted"):
+                            return {"success": False, "error": parsed["error"]}
+
+                        direct_url = parsed["direct_url"]
+                        title = parsed["title"]
+                        duration = parsed["duration"]
+                        thumbnail = parsed["thumbnail"]
+
+                        # Quick HEAD request for file size (1.5s timeout)
+                        filesize = None
+                        try:
+                            head_res = await client.head(direct_url, timeout=1.5)
+                            cl = head_res.headers.get("Content-Length")
+                            if cl and cl.isdigit():
+                                filesize = int(cl)
+                        except Exception:
+                            pass
+
+                        return build_video_response(
+                            direct_url=direct_url,
+                            source_url=normalized_url,
+                            title=title,
+                            channel=channel,
+                            msg_id=msg_id,
+                            duration=duration,
+                            width=None,
+                            height=None,
+                            filesize=filesize,
+                            thumbnail=thumbnail,
+                            ext='mp4'
+                        )
+    except Exception:
+        has_timeout = True
+
+    # Step 2: yt-dlp fallback with strict 4-second timeout
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'skip_download': True,
         'nocheckcertificate': True,
-        'socket_timeout': 10,
+        'socket_timeout': 4,
     }
+    if proxy_url:
+        ydl_opts['proxy'] = proxy_url
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(normalized_url, download=False)
-            
-            if info and info.get('url'):
-                direct_url = info.get('url')
-                title = info.get('title') or f"telegram_{channel}_{msg_id}"
-                duration = info.get('duration') or 0
-                width = info.get('width')
-                height = info.get('height')
-                filesize = info.get('filesize') or info.get('filesize_approx')
-                thumbnail = info.get('thumbnail')
-                ext = info.get('ext') or 'mp4'
+        loop = asyncio.get_event_loop()
+        def _run_ytdlp():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                return ydl.extract_info(normalized_url, download=False)
+        
+        info = await asyncio.wait_for(loop.run_in_executor(None, _run_ytdlp), timeout=4.5)
+        
+        if info and info.get('url'):
+            direct_url = info.get('url')
+            title = info.get('title') or f"telegram_{channel}_{msg_id}"
+            duration = info.get('duration') or 0
+            width = info.get('width')
+            height = info.get('height')
+            filesize = info.get('filesize') or info.get('filesize_approx')
+            thumbnail = info.get('thumbnail')
+            ext = info.get('ext') or 'mp4'
 
-                if (not filesize or filesize == 0) and direct_url:
-                    try:
-                        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
-                            head_res = await client.head(direct_url)
-                            cl = head_res.headers.get("Content-Length")
-                            if cl and cl.isdigit():
-                                filesize = int(cl)
-                    except Exception:
-                        pass
-
-                return build_video_response(
-                    direct_url=direct_url,
-                    source_url=normalized_url,
-                    title=title,
-                    channel=channel,
-                    msg_id=msg_id,
-                    duration=duration,
-                    width=width,
-                    height=height,
-                    filesize=filesize,
-                    thumbnail=thumbnail,
-                    ext=ext
-                )
+            return build_video_response(
+                direct_url=direct_url,
+                source_url=normalized_url,
+                title=title,
+                channel=channel,
+                msg_id=msg_id,
+                duration=duration,
+                width=width,
+                height=height,
+                filesize=filesize,
+                thumbnail=thumbnail,
+                ext=ext
+            )
     except Exception:
         pass
 
-    # 2. Fallback: Direct Scraping of Telegram Web Embed and Public Channel Preview
-    msg_num = int(msg_id) if msg_id.isdigit() else 0
-    urls_to_try = [
-        embed_url,
-        s_url,
-        normalized_url
-    ]
-    if msg_num > 0:
-        urls_to_try.insert(2, f"https://t.me/s/{channel}?before={msg_num + 2}")
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://t.me/"
-    }
-
-    last_error = "No public video found at this Telegram URL. The media might be in a private channel, restricted group, or deleted."
-    post_has_restricted_media = False
-
-    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, headers=headers, verify=False) as client:
-        for target_scrape_url in urls_to_try:
-            try:
-                res = await client.get(target_scrape_url)
-                if res.status_code != 200:
-                    continue
-
-                html = res.text
-                soup = BeautifulSoup(html, "html.parser")
-
-                # Check for Telegram restriction / error notices
-                error_el = soup.select_one(".tgme_widget_message_error")
-                if error_el:
-                    error_text = error_el.get_text(strip=True).lower()
-                    if any(w in error_text for w in ["restrict", "protected", "private", "access denied", "forbidden", "saving"]):
-                        return {
-                            "success": False,
-                            "error": "This Telegram post has content protection enabled ('Restrict Saving Content'). Media cannot be fetched from restricted channels."
-                        }
-                    if "not found" in error_text:
-                        last_error = "Telegram post not found. Check if the message link is correct."
-                        continue
-                    last_error = f"Telegram restriction: {error_el.get_text(strip=True)}"
-                    continue
-
-                # Target specific post container if searching timeline
-                target_container = soup.select_one(f'[data-post="{channel}/{msg_id}"]') or soup
-
-                # Check if post exists and shows signs of media/video while suppressing direct <video> stream
-                has_message_bubble = bool(target_container.select_one(".tgme_widget_message, .tgme_widget_message_bubble, .tgme_widget_message_wrap"))
-                has_video_placeholder = bool(target_container.select_one(".tgme_widget_message_video_thumb, .tgme_widget_message_video_player, .tgme_widget_message_roundvideo_thumb, .message_media_not_supported"))
-
-                # Strategy A: DOM video element search
-                video_el = target_container.select_one(
-                    "video.tgme_widget_message_video, "
-                    "video.tgme_widget_message_roundvideo, "
-                    ".tgme_widget_message_video_player video, "
-                    ".tgme_widget_message_bubble video, "
-                    ".tgme_widget_message_wrap video, "
-                    "video"
-                )
-
-                direct_url = None
-                if video_el:
-                    direct_url = video_el.get("src")
-                    if not direct_url:
-                        source_tag = video_el.select_one("source")
-                        if source_tag:
-                            direct_url = source_tag.get("src")
-
-                # Strategy B: Document video attachment
-                if not direct_url:
-                    doc_video = target_container.select_one(
-                        "a.tgme_widget_message_document_wrap[href*='.mp4'], "
-                        "a.tgme_widget_message_document_wrap[href*='.mkv'], "
-                        "a.tgme_widget_message_document_wrap[href*='.mov'], "
-                        "a.tgme_widget_message_document_wrap[href*='.webm']"
-                    )
-                    if doc_video:
-                        direct_url = doc_video.get("href")
-
-                # Strategy C: Deep Regex Search in HTML payload for direct CDN video streams
-                if not direct_url:
-                    video_url_matches = re.findall(
-                        r'(https?:\/\/[^"\'\s<>]+\.(?:mp4|m4v|mov|webm)(?:\?[^"\'\s<>]*)?)',
-                        html
-                    )
-                    if video_url_matches:
-                        for match_url in video_url_matches:
-                            if "telegram" in match_url or "telesco.pe" in match_url or "cdn" in match_url:
-                                direct_url = match_url
-                                break
-                        if not direct_url and video_url_matches:
-                            direct_url = video_url_matches[0]
-
-                # Strategy D: Check telesco.pe video notes
-                if not direct_url:
-                    telescope_match = re.search(r'(https?:\/\/telesco\.pe\/[^"\'\s<>]+\.mp4)', html)
-                    if telescope_match:
-                        direct_url = telescope_match.group(1)
-
-                # Fix relative URLs if any
-                if direct_url:
-                    if direct_url.startswith("//"):
-                        direct_url = "https:" + direct_url
-                    elif direct_url.startswith("/") and not direct_url.startswith("http"):
-                        direct_url = "https://t.me" + direct_url
-
-                if not direct_url:
-                    # If the message exists and contains media indicator but direct stream was blocked
-                    if has_message_bubble and has_video_placeholder:
-                        post_has_restricted_media = True
-
-                    photo_el = target_container.select_one(".tgme_widget_message_photo_wrap")
-                    if photo_el:
-                        last_error = "This Telegram post contains a photo/image, not a video."
-                    continue
-
-                # Extract thumbnail
-                thumbnail = None
-                thumb_el = target_container.select_one(
-                    ".tgme_widget_message_video_thumb, "
-                    ".tgme_widget_message_roundvideo_thumb, "
-                    ".tgme_widget_message_photo_wrap"
-                )
-                if thumb_el and "style" in thumb_el.attrs:
-                    style = thumb_el["style"]
-                    match = re.search(r"background-image:\s*url\(['\"]?(.*?)['\"]?\)", style)
-                    if match:
-                        thumbnail = match.group(1)
-
-                # Extract duration
-                duration = 0
-                time_el = target_container.select_one(
-                    ".tgme_widget_message_video_duration, "
-                    ".tgme_widget_message_roundvideo_duration, "
-                    "time"
-                )
-                if time_el:
-                    time_str = time_el.get_text(strip=True)
-                    parts = time_str.split(":")
-                    if len(parts) == 2:
-                        duration = int(parts[0]) * 60 + int(parts[1])
-                    elif len(parts) == 3:
-                        duration = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-
-                # Extract message text as title
-                text_el = target_container.select_one(".tgme_widget_message_text")
-                title = text_el.get_text(strip=True)[:60] if text_el else f"Telegram_{channel}_{msg_id}"
-                if not title:
-                    title = f"Telegram_{channel}_{msg_id}"
-
-                # Query Content-Length via HEAD request
-                filesize = None
-                try:
-                    head_res = await client.head(direct_url)
-                    cl = head_res.headers.get("Content-Length")
-                    if cl and cl.isdigit():
-                        filesize = int(cl)
-                except Exception:
-                    pass
-
-                return build_video_response(
-                    direct_url=direct_url,
-                    source_url=normalized_url,
-                    title=title,
-                    channel=channel,
-                    msg_id=msg_id,
-                    duration=duration,
-                    width=None,
-                    height=None,
-                    filesize=filesize,
-                    thumbnail=thumbnail,
-                    ext='mp4'
-                )
-            except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.TimeoutException) as ex:
-                last_error = "Connection to Telegram (t.me) timed out. Telegram servers may be restricted or blocked by your ISP/network. Try enabling a VPN or checking your internet connection."
-                continue
-            except Exception as ex:
-                continue
-
-    if post_has_restricted_media:
+    if has_timeout:
         return {
             "success": False,
-            "error": "This Telegram post has content protection enabled ('Restrict Saving Content'). Media cannot be fetched from restricted channels."
+            "error": "Telegram servers (t.me) are blocked or timed out on your internet network. Please turn on a VPN (e.g. Cloudflare 1.1.1.1 WARP / ProtonVPN) or configure a Proxy."
         }
 
     return {
         "success": False,
-        "error": last_error
+        "error": "No public video stream found for this Telegram link. The post may be restricted, from a private group, or deleted."
     }
 
 def build_video_response(
@@ -346,21 +348,17 @@ def build_video_response(
     """
     Constructs normalized response with dynamic quality and compression options.
     """
-    # Clean filename title
     safe_title = re.sub(r'[\\/*?:"<>|]', '', title).strip() or f"telegram_{channel}_{msg_id}"
     filename = f"{safe_title}.{ext}"
 
-    # Determine resolution label
     resolution_label = "HD"
     if width and height:
         resolution_label = f"{width} × {height}"
     elif height:
         resolution_label = f"{height}p"
 
-    # Dynamic available qualities (strictly what's available without false upscaling)
     qualities = [{"id": "original", "name": "Original", "is_default": True}]
-    
-    source_height = height or 1080 # default assumed source max if not specified
+    source_height = height or 1080
     if source_height >= 1080:
         qualities.append({"id": "1080p", "name": "1080p (Full HD)", "height": 1080})
     if source_height >= 720:
@@ -370,7 +368,6 @@ def build_video_response(
     if source_height >= 360:
         qualities.append({"id": "360p", "name": "360p (Low)", "height": 360})
 
-    # Compression presets with estimated sizes
     compression_presets = [
         {
             "id": "best",
