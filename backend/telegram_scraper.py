@@ -278,13 +278,13 @@ async def extract_telegram_video_info(url: str, user_id: str = "default") -> Dic
     except Exception:
         has_timeout = True
 
-    # Step 2: yt-dlp fallback with strict 4-second timeout
+    # Step 2: yt-dlp fallback with 12-second timeout
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'skip_download': True,
         'nocheckcertificate': True,
-        'socket_timeout': 4,
+        'socket_timeout': 12,
     }
     if proxy_url:
         ydl_opts['proxy'] = proxy_url
@@ -295,7 +295,7 @@ async def extract_telegram_video_info(url: str, user_id: str = "default") -> Dic
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 return ydl.extract_info(normalized_url, download=False)
         
-        info = await asyncio.wait_for(loop.run_in_executor(None, _run_ytdlp), timeout=4.5)
+        info = await asyncio.wait_for(loop.run_in_executor(None, _run_ytdlp), timeout=14.0)
         
         if info and info.get('url'):
             direct_url = info.get('url')
