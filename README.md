@@ -1,92 +1,80 @@
-# 🎬 TeleStream - Web Video Downloader
+# 🎬 TeleStream - Telegram Video Downloader with Firebase Google Auth
 
-**TeleStream** is a lightweight, high-performance, web-only application designed to analyze and download publicly available Telegram videos directly through your web browser without requiring a Telegram account, login, or any browser extensions.
+**TeleStream** is a lightweight, web-only application designed to analyze and download publicly available Telegram videos directly through your web browser with secure **Firebase Google Authentication**.
 
 ---
 
 ## ✨ Features
 
-- **Web-Only & Zero Auth**: Operates completely in a standard browser (e.g. Google Chrome at `http://127.0.0.1:8000`). No extensions, logins, OTPs, or API keys needed.
+- **Firebase Google Sign-In**: Seamless authentication with your Google account via Firebase Auth (`maintainiq-e33d4`).
+- **Zero Subscription / Zero Paywalls**: No pricing tiers, no credit limits, no license activations. Every authenticated user gets full access.
+- **User-Isolated Storage**: Individual download history and settings are tied securely to the user's Firebase UID.
 - **Dynamic Quality Selector**: Accurately displays source video resolutions (`Original`, `1080p`, `720p`, `480p`, `360p`) without artificial upscaling.
 - **FFmpeg Size & Compression Presets**:
-  - `Best Quality`: Near-lossless direct download with light container packaging.
+  - `Best Quality`: Direct stream with minimal loss.
   - `Balanced`: H.264 compression saving ~50% disk space while preserving visual quality.
   - `Smallest Size`: High-efficiency compression for low-bandwidth / storage constraints.
-- **Advanced Encoding Options**: Customizable CRF (Constant Rate Factor), FPS limiting, and MP4/MKV format selectors.
-- **Asynchronous Download Manager**: Multi-task download queue with live download speed, ETA countdown, chunk streaming, Pause, Resume, Retry, and Cancel.
-- **Local History & Settings**: Persistent SQLite storage for downloaded files with one-click opening in Windows Explorer.
-- **Safety & Performance**: Chunk-based streaming prevents loading entire videos into memory; automatic Windows filename sanitization and collision prevention (`video (1).mp4`).
-- **Modern UI**: Dark/Light mode, glassmorphic card design, and responsive layouts.
+- **Asynchronous Download Queue**: Multi-task download manager with live speed, ETA countdown, chunk streaming, Pause, Resume, Retry, and Cancel.
+- **Modern Responsive UI**: Dark & Light mode themes, glassmorphism cards, and instant toast notifications.
 
 ---
 
-## 📋 Requirements
+## 🔐 Firebase Authentication Setup
 
-- **Operating System**: Windows 10/11, Linux, or macOS (Windows optimized).
-- **Python**: Python 3.10+ (Python 3.12 recommended).
-- **Web Browser**: Google Chrome, Microsoft Edge, Firefox, Brave, etc.
-- **FFmpeg (Optional)**: Required only if you wish to use compression presets or resolution downscaling. Direct original video downloads work out of the box without FFmpeg.
+### 1. Frontend Configuration
+The frontend connects directly to your Firebase project (`maintainiq-e33d4`) using Firebase Web SDK 10.x. Google Sign-In is initialized in [`static/js/firebase-config.js`](file:///d:/Telegram-Video-Downloader/static/js/firebase-config.js).
 
----
+### 2. Backend Token Verification (Firebase Admin SDK)
+The FastAPI backend verifies incoming Firebase ID tokens sent in the `Authorization: Bearer <ID_TOKEN>` header.
 
-## 📦 Installation
-
-1. **Clone or Open the Repository**:
+To configure private backend Admin credentials:
+1. Copy `.env.example` to `.env`:
    ```bash
-   cd Telegram-Video-Downloader
+   cp .env.example .env
    ```
-
-2. **Install Python Dependencies**:
-   ```bash
-   pip install -r requirements.txt
+2. Set your `FIREBASE_SERVICE_ACCOUNT` path or JSON string in `.env`:
+   ```env
+   FIREBASE_PROJECT_ID=maintainiq-e33d4
+   FIREBASE_SERVICE_ACCOUNT=./service-account.json
    ```
+*(Never commit your private service-account credentials to Git. `.gitignore` is preconfigured to prevent accidental commits).*
 
 ---
 
-## 🎥 FFmpeg Setup (Optional)
+## 🚀 Quick Start
 
-If you want to use the **Balanced** or **Smallest Size** compression presets:
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-- **Windows (winget)**:
-  ```powershell
-  winget install Gyan.FFmpeg
-  ```
-- **Manual**: Download `ffmpeg.exe` from [ffmpeg.org](https://ffmpeg.org/download.html) and either add it to your system `PATH` or place `ffmpeg.exe` inside a `bin/` folder in the project root.
-
-TeleStream automatically detects FFmpeg on startup and indicates its availability in the top-right header and Settings tab.
-
----
-
-## 🚀 Running the Application
-
-Start the web server with a single command:
-
-```powershell
+### 2. Start Application
+```bash
 python app.py
 ```
+*(Or double-click `run.bat` on Windows)*
 
-*(On Windows, you can also double-click `run.bat`)*
+The application starts on **`http://127.0.0.1:8000`** and automatically opens in your default browser (Google Chrome).
 
-### Browser Usage
+---
 
-Once started, TeleStream will automatically launch in your default web browser at:
+## 📱 User Workflow
+
 ```text
-http://127.0.0.1:8000
+1. Open http://127.0.0.1:8000
+       ↓
+2. Click "Continue with Google"
+       ↓
+3. Paste public Telegram Video URL (e.g. https://t.me/channel/123)
+       ↓
+4. Select Quality / Compression Preset
+       ↓
+5. Download and track live progress
 ```
-
-### Workflow
-
-1. Paste a public Telegram video URL (e.g. `https://t.me/channel_name/123`).
-2. Click **Analyze Video**.
-3. View video dimensions, duration, format, and estimated size.
-4. Select your preferred resolution quality and compression preset.
-5. Click **Download Video**. Progress and speed will be tracked in the **Downloads** queue.
 
 ---
 
 ## ⚡ Supported Telegram URL Formats
-
-TeleStream supports publicly accessible Telegram post links, including:
 
 - `https://t.me/channel_name/123`
 - `https://t.me/channel_name/123?single`
@@ -96,14 +84,7 @@ TeleStream supports publicly accessible Telegram post links, including:
 
 ---
 
-## ⚠️ Known Limitations
+## ⚠️ Known Limitations & Responsible Use
 
-- **Public Channels Only**: The media must be hosted in a public Telegram channel or group accessible via Telegram web preview.
-- **Protected Content**: Content protected by channel owners with "Restrict Saving Content" or messages requiring membership authentication cannot be retrieved. TeleStream reports these restrictions cleanly.
-- **Private Invite Links**: Links containing `t.me/c/...` or `t.me/+joinchat` are private and require user credentials, which TeleStream intentionally does not request or store.
-
----
-
-## ⚖️ Legal & Responsible Use
-
-TeleStream is designed for downloading public domain, freely shared, or user-owned media from public Telegram channels. Users are responsible for complying with Telegram's Terms of Service and applicable copyright laws in their jurisdiction. Do not use this tool to infringe upon intellectual property rights.
+- **Public Channels Only**: The media must be in a publicly accessible Telegram channel or group.
+- **Content Protection**: Channels with "Restrict Saving Content" or private invite restrictions (`t.me/c/...`) cannot be retrieved. TeleStream reports these restrictions cleanly.

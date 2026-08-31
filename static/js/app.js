@@ -1,33 +1,150 @@
-// State
+import { 
+    auth, 
+    googleProvider, 
+    signInWithPopup, 
+    signOut, 
+    onAuthStateChanged 
+} from "/static/js/firebase-config.js";
+
+// Global State
+let currentUser = null;
 let currentAnalyzedData = null;
 let selectedQuality = "original";
 let selectedPreset = "best";
 let activeTasksPollingInterval = null;
 let appSettings = {};
 
-// Initialization
-document.addEventListener("DOMContentLoaded", async () => {
-    initTheme();
-    await loadSettings();
-    await checkSystemStatus();
-    startPollingTasks();
-});
+// Helper: Authenticated fetch wrapper that attaches Firebase ID token
+async function authFetch(url, options = {}) {
+    if (!currentUser) {
+        throw new Error("User not authenticated.");
+    }
+    
+    let token = await currentUser.getIdToken(false);
+    const headers = options.headers ? { ...options.headers } : {};
+    headers["Authorization"] = `Bearer ${token}`;
 
-// Theme Toggle
-function initTheme() {
-    const savedTheme = localStorage.getItem("tele_theme") || "dark";
-    document.documentElement.setAttribute("data-theme", savedTheme);
+    let response = await fetch(url, {
+        ...options,
+        headers
+    });
+
+    if (response.status === 401) {
+        // Try refreshing token once
+        try {
+            token = await currentUser.getIdToken(true);
+            headers["Authorization"] = `Bearer ${token}`;
+            response = await fetch(url, { ...options, headers });
+            if (response.ok) return response;
+        } catch (e) {}
+
+        const errJson = await response.json().catch(() => ({}));
+        showToast(errJson.detail || "Authentication error.", "error");
+        throw new Error(errJson.detail || "Unauthorized");
+    }
+
+    return response;
 }
 
-function toggleTheme() {
+// Authentication Listeners & State Machine
+onAuthStateChanged(auth, async (user) => {
+    const authScreen = document.getElementById("authScreen");
+    const appDashboard = document.getElementById("appDashboard");
+    const authSpinner = document.getElementById("authSpinner");
+    const btnGoogle = document.getElementById("btnGoogleSignIn");
+
+    if (user) {
+        // Logged In
+        currentUser = user;
+        authScreen.style.display = "none";
+        appDashboard.style.display = "flex";
+
+        // Update User Profile Chip
+        document.getElementById("userAvatarImg").src = user.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+        document.getElementById("userDisplayName").textContent = user.displayName || "Google User";
+        document.getElementById("userEmailText").textContent = user.email || "";
+        document.getElementById("diagUserUid").textContent = user.uid;
+
+        // Initialize dashboard data
+        await loadSettings();
+        await checkSystemStatus();
+        startPollingTasks();
+    } else {
+        // Logged Out
+        currentUser = null;
+        if (activeTasksPollingInterval) {
+            clearInterval(activeTasksPollingInterval);
+            activeTasksPollingInterval = null;
+        }
+        appDashboard.style.display = "none";
+        authScreen.style.display = "flex";
+        resetDownloader();
+    }
+
+    if (btnGoogle) btnGoogle.disabled = false;
+    if (authSpinner) authSpinner.style.display = "none";
+});
+
+// Google Sign-In Handler
+window.handleGoogleSignIn = async function() {
+    const btn = document.getElementById("btnGoogleSignIn");
+    const spinner = document.getElementById("authSpinner");
+    const errBanner = document.getElementById("authErrorBanner");
+
+    errBanner.style.display = "none";
+    btn.disabled = true;
+    spinner.style.display = "inline-block";
+
+    try {
+        await signInWithPopup(auth, googleProvider);
+        showToast("Signed in with Google successfully!", "success");
+    } catch (error) {
+        console.error("Google Auth error:", error);
+        btn.disabled = false;
+        spinner.style.display = "none";
+        
+        let message = "Failed to sign in with Google. Please try again.";
+        if (error.code === "auth/unauthorized-domain") {
+            message = "Domain not authorized. Please open http://localhost:8000 in your browser, or add '127.0.0.1' to Firebase Console > Authentication > Settings > Authorized domains.";
+        } else if (error.code === "auth/popup-closed-by-user") {
+            message = "Sign-in popup was closed before completing.";
+        } else if (error.code === "auth/popup-blocked") {
+            message = "Popup blocked by browser. Please allow popups for this site.";
+        } else if (error.message) {
+            message = error.message;
+        }
+        errBanner.textContent = message;
+        errBanner.style.display = "block";
+    }
+};
+
+// Sign-Out Handler
+window.handleSignOut = async function() {
+    try {
+        await signOut(auth);
+        showToast("Signed out successfully.", "info");
+    } catch (e) {
+        showToast("Error signing out.", "error");
+    }
+};
+
+// Theme Management
+window.initTheme = function() {
+    const savedTheme = localStorage.getItem("tele_theme") || "dark";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+};
+
+window.toggleTheme = function() {
     const current = document.documentElement.getAttribute("data-theme") || "dark";
     const next = current === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("tele_theme", next);
-}
+};
 
-// Tab Switching
-function switchTab(tabId) {
+initTheme();
+
+// Navigation Tabs
+window.switchTab = function(tabId) {
     document.querySelectorAll(".nav-tab").forEach(tab => tab.classList.remove("active"));
     document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"));
 
@@ -51,10 +168,10 @@ function switchTab(tabId) {
     if (tabId === "history") loadHistory();
     if (tabId === "settings") loadSettings();
     if (tabId === "queue") fetchTasks();
-}
+};
 
 // Clipboard Paste
-async function pasteFromClipboard() {
+window.pasteFromClipboard = async function() {
     try {
         const text = await navigator.clipboard.readText();
         if (text) {
@@ -64,22 +181,22 @@ async function pasteFromClipboard() {
     } catch (e) {
         showToast("Clipboard access denied. Please paste manually.", "error");
     }
-}
+};
 
 // Alert handling
-function showAlert(message) {
+window.showAlert = function(message) {
     const alertEl = document.getElementById("alertContainer");
     const msgEl = document.getElementById("alertMessage");
     msgEl.textContent = message;
     alertEl.style.display = "flex";
-}
+};
 
-function hideAlert() {
+window.hideAlert = function() {
     document.getElementById("alertContainer").style.display = "none";
-}
+};
 
 // Toast notification
-function showToast(message, type = "info") {
+window.showToast = function(message, type = "info") {
     const container = document.getElementById("toastContainer");
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
@@ -89,10 +206,10 @@ function showToast(message, type = "info") {
         toast.style.opacity = "0";
         setTimeout(() => toast.remove(), 300);
     }, 3500);
-}
+};
 
 // Analyze Telegram URL
-async function handleAnalyze() {
+window.handleAnalyze = async function() {
     hideAlert();
     const urlInput = document.getElementById("telegramUrlInput");
     const rawUrl = urlInput.value.trim();
@@ -113,7 +230,7 @@ async function handleAnalyze() {
     btnAnalyze.disabled = true;
 
     try {
-        const response = await fetch("/api/analyze", {
+        const response = await authFetch("/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: rawUrl })
@@ -140,7 +257,7 @@ async function handleAnalyze() {
         btnArrow.style.display = "inline-block";
         btnAnalyze.disabled = false;
     }
-}
+};
 
 // Render Video Information & Quality Controls
 function renderVideoPreview(data) {
@@ -204,11 +321,11 @@ function renderVideoPreview(data) {
     card.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function handleThumbError(img) {
+window.handleThumbError = function(img) {
     img.style.display = "none";
-}
+};
 
-function selectQuality(qId) {
+window.selectQuality = function(qId) {
     selectedQuality = qId;
     document.querySelectorAll(".quality-btn").forEach(btn => {
         if (btn.dataset.quality === qId) {
@@ -217,9 +334,9 @@ function selectQuality(qId) {
             btn.classList.remove("active");
         }
     });
-}
+};
 
-function selectPreset(presetId) {
+window.selectPreset = function(presetId) {
     selectedPreset = presetId;
     document.querySelectorAll(".preset-btn").forEach(btn => {
         if (btn.dataset.preset === presetId) {
@@ -235,9 +352,9 @@ function selectPreset(presetId) {
         smallest: "H.264 high compression (Smallest file size)"
     };
     document.getElementById("presetSummaryText").textContent = summaryText[presetId] || "";
-}
+};
 
-function toggleAdvancedSettings() {
+window.toggleAdvancedSettings = function() {
     const drawer = document.getElementById("advancedDrawer");
     const btn = document.querySelector(".btn-accordion");
     if (drawer.style.display === "none") {
@@ -247,9 +364,9 @@ function toggleAdvancedSettings() {
         drawer.style.display = "none";
         btn.classList.remove("open");
     }
-}
+};
 
-function togglePlayPreview() {
+window.togglePlayPreview = function() {
     if (!currentAnalyzedData || !currentAnalyzedData.direct_url) return;
     const player = document.getElementById("html5VideoPlayer");
     const wrapper = document.getElementById("thumbWrapper");
@@ -259,21 +376,26 @@ function togglePlayPreview() {
         wrapper.style.display = "none";
         player.play().catch(() => {});
     }
-}
+};
 
-function resetDownloader() {
+window.resetDownloader = function() {
     currentAnalyzedData = null;
-    document.getElementById("videoPreviewCard").style.display = "none";
-    document.getElementById("telegramUrlInput").value = "";
+    const card = document.getElementById("videoPreviewCard");
+    if (card) card.style.display = "none";
+    const inp = document.getElementById("telegramUrlInput");
+    if (inp) inp.value = "";
     const player = document.getElementById("html5VideoPlayer");
-    player.pause();
-    player.src = "";
-    player.style.display = "none";
-    document.getElementById("thumbWrapper").style.display = "flex";
-}
+    if (player) {
+        player.pause();
+        player.src = "";
+        player.style.display = "none";
+    }
+    const wrapper = document.getElementById("thumbWrapper");
+    if (wrapper) wrapper.style.display = "flex";
+};
 
 // Start Download
-async function startDownload() {
+window.startDownload = async function() {
     if (!currentAnalyzedData) return;
 
     const customFilename = document.getElementById("customFilenameInput").value.trim() || currentAnalyzedData.filename;
@@ -299,7 +421,7 @@ async function startDownload() {
     };
 
     try {
-        const res = await fetch("/api/download", {
+        const res = await authFetch("/api/download", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -314,7 +436,7 @@ async function startDownload() {
     } catch (err) {
         showToast(`Failed to start download: ${err.message}`, "error");
     }
-}
+};
 
 // Download Tasks & Queue Polling
 function startPollingTasks() {
@@ -325,8 +447,9 @@ function startPollingTasks() {
 }
 
 async function fetchTasks() {
+    if (!currentUser) return;
     try {
-        const res = await fetch("/api/downloads");
+        const res = await authFetch("/api/downloads");
         if (!res.ok) return;
         const data = await res.json();
         renderTasks(data.tasks || []);
@@ -440,16 +563,17 @@ function renderTasks(tasks) {
     }).join("");
 }
 
-async function pauseTask(id) { await fetch(`/api/downloads/${id}/pause`, { method: "POST" }); fetchTasks(); }
-async function resumeTask(id) { await fetch(`/api/downloads/${id}/resume`, { method: "POST" }); fetchTasks(); }
-async function retryTask(id) { await fetch(`/api/downloads/${id}/retry`, { method: "POST" }); fetchTasks(); }
-async function cancelTask(id) { await fetch(`/api/downloads/${id}/cancel`, { method: "POST" }); fetchTasks(); }
-async function deleteTask(id) { await fetch(`/api/downloads/${id}`, { method: "DELETE" }); fetchTasks(); }
+window.pauseTask = async function(id) { await authFetch(`/api/downloads/${id}/pause`, { method: "POST" }); fetchTasks(); };
+window.resumeTask = async function(id) { await authFetch(`/api/downloads/${id}/resume`, { method: "POST" }); fetchTasks(); };
+window.retryTask = async function(id) { await authFetch(`/api/downloads/${id}/retry`, { method: "POST" }); fetchTasks(); };
+window.cancelTask = async function(id) { await authFetch(`/api/downloads/${id}/cancel`, { method: "POST" }); fetchTasks(); };
+window.deleteTask = async function(id) { await authFetch(`/api/downloads/${id}`, { method: "DELETE" }); fetchTasks(); };
 
 // History
 async function loadHistory() {
+    if (!currentUser) return;
     try {
-        const res = await fetch("/api/history");
+        const res = await authFetch("/api/history");
         const data = await res.json();
         renderHistory(data.history || []);
     } catch (e) {}
@@ -489,22 +613,23 @@ function renderHistory(items) {
     `).join("");
 }
 
-async function removeHistoryItem(id) {
-    await fetch(`/api/history/${id}`, { method: "DELETE" });
+window.removeHistoryItem = async function(id) {
+    await authFetch(`/api/history/${id}`, { method: "DELETE" });
     loadHistory();
-}
+};
 
-async function clearHistory() {
-    if (!confirm("Are you sure you want to clear all download history?")) return;
-    await fetch("/api/history", { method: "DELETE" });
+window.clearHistory = async function() {
+    if (!confirm("Are you sure you want to clear all your download history?")) return;
+    await authFetch("/api/history", { method: "DELETE" });
     loadHistory();
     showToast("History cleared.", "info");
-}
+};
 
 // Settings
 async function loadSettings() {
+    if (!currentUser) return;
     try {
-        const res = await fetch("/api/settings");
+        const res = await authFetch("/api/settings");
         const data = await res.json();
         appSettings = data.settings || {};
 
@@ -515,7 +640,7 @@ async function loadSettings() {
     } catch (e) {}
 }
 
-async function saveSettings() {
+window.saveSettings = async function() {
     const updated = {
         download_dir: document.getElementById("settingDownloadDir").value.trim(),
         default_quality: document.getElementById("settingDefaultQuality").value,
@@ -524,7 +649,7 @@ async function saveSettings() {
     };
 
     try {
-        const res = await fetch("/api/settings", {
+        const res = await authFetch("/api/settings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ settings: updated })
@@ -537,27 +662,19 @@ async function saveSettings() {
     } catch (e) {
         showToast("Failed to save settings.", "error");
     }
-}
+};
 
 // System Diagnostics & FFmpeg
 async function checkSystemStatus() {
     try {
         const res = await fetch("/api/system/status");
         const data = await res.json();
-
-        const pill = document.getElementById("ffmpegStatusPill");
-        const dot = pill.querySelector(".status-dot");
-        const text = pill.querySelector(".status-text");
         const diagFfmpeg = document.getElementById("diagFfmpeg");
 
         if (data.ffmpeg && data.ffmpeg.available) {
-            dot.classList.add("active");
-            text.textContent = "FFmpeg: Available";
             diagFfmpeg.textContent = "Detected & Ready (Hardware Transcoding Enabled)";
             diagFfmpeg.style.color = "var(--color-success)";
         } else {
-            dot.classList.remove("active");
-            text.textContent = "FFmpeg: Not Installed";
             diagFfmpeg.textContent = "Not Found (Original Stream mode active)";
             diagFfmpeg.style.color = "var(--color-warning)";
         }
@@ -565,9 +682,9 @@ async function checkSystemStatus() {
 }
 
 // Open folder
-async function openDownloadFolder() {
+window.openDownloadFolder = async function() {
     try {
-        const res = await fetch("/api/open-folder", {
+        const res = await authFetch("/api/open-folder", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ path: appSettings.download_dir || null })
@@ -580,7 +697,7 @@ async function openDownloadFolder() {
     } catch (e) {
         showToast("Could not open folder.", "error");
     }
-}
+};
 
 function escapeHtml(str) {
     if (!str) return "";

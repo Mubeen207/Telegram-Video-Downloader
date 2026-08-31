@@ -15,12 +15,13 @@ def open_browser_delayed(url: str, delay: float = 1.2):
 def main():
     port = int(os.environ.get("PORT", 8000))
     host = os.environ.get("HOST", "127.0.0.1")
-    url = f"http://{host}:{port}"
+    # Use localhost for URL because Firebase Auth pre-authorizes 'localhost' by default
+    url = f"http://localhost:{port}"
     
     print("=" * 60)
-    print("  Telegram Video Downloader - Web Application")
+    print("  TeleStream - Telegram Video Downloader")
     print(f"  Server URL : {url}")
-    print(f"  Status     : Ready (No Telegram Login Required)")
+    print(f"  Auth Mode  : Firebase Google Authentication")
     print("=" * 60)
 
     # Open browser automatically if not in headless or no-browser mode

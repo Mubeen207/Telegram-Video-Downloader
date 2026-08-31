@@ -13,7 +13,7 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Settings table with user_id support
+    # Check & migrate settings table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS settings (
         user_id TEXT,
@@ -23,7 +23,26 @@ def init_db():
     )
     """)
     
-    # Download History table with user_id
+    try:
+        cursor.execute("SELECT user_id FROM settings LIMIT 1")
+    except sqlite3.OperationalError:
+        # Migrate legacy settings table
+        try:
+            cursor.execute("ALTER TABLE settings RENAME TO settings_old")
+            cursor.execute("""
+            CREATE TABLE settings (
+                user_id TEXT,
+                key TEXT,
+                value TEXT,
+                PRIMARY KEY (user_id, key)
+            )
+            """)
+            cursor.execute("INSERT OR IGNORE INTO settings (user_id, key, value) SELECT 'default', key, value FROM settings_old")
+            cursor.execute("DROP TABLE settings_old")
+        except Exception:
+            pass
+
+    # Check & migrate history table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS history (
         id TEXT PRIMARY KEY,
@@ -43,11 +62,13 @@ def init_db():
     )
     """)
     
-    # Safe column migration check if tables already existed without user_id
     try:
         cursor.execute("SELECT user_id FROM history LIMIT 1")
     except sqlite3.OperationalError:
-        cursor.execute("ALTER TABLE history ADD COLUMN user_id TEXT DEFAULT 'default'")
+        try:
+            cursor.execute("ALTER TABLE history ADD COLUMN user_id TEXT DEFAULT 'default'")
+        except Exception:
+            pass
         
     conn.commit()
     conn.close()
@@ -58,7 +79,6 @@ def get_setting(key: str, default: Optional[str] = None, user_id: str = "default
     cursor.execute("SELECT value FROM settings WHERE user_id = ? AND key = ?", (user_id, key))
     row = cursor.fetchone()
     if not row and user_id != "default":
-        # Fallback to default
         cursor.execute("SELECT value FROM settings WHERE user_id = 'default' AND key = ?", (key,))
         row = cursor.fetchone()
     conn.close()
@@ -77,7 +97,6 @@ def save_setting(key: str, value: str, user_id: str = "default"):
 def get_all_settings(user_id: str = "default") -> Dict[str, str]:
     conn = get_db_connection()
     cursor = conn.cursor()
-    # Default settings
     default_settings = {
         "download_dir": get_default_download_dir(),
         "default_quality": "original",
